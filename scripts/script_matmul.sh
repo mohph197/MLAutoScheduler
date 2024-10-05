@@ -14,7 +14,7 @@
 WORKER_NUM=$((SLURM_JOB_NUM_NODES - 1))
 PORT=6379
 CONDA_DIR=/share/apps/NYUAD5/miniconda/3-4.11.0
-CONDA_ENV=/home/ia2280/.conda/envs/mlir
+CONDA_ENV=/home/mt5383/.conda/envs/main
 RAY_OBJECT_STORE_ALLOW_SLOW_STORAGE=1
 RAY_ALLOW_SLOW_STORAGE=1
 pwd=$(pwd)
@@ -23,8 +23,8 @@ pwd=$(pwd)
 conda activate $CONDA_ENV
 
 cmake --build .
-export LLVM_PATH=/scratch/ia2280/LLVM/llvm-project
-export SHARED_LIBS=/scratch/ia2280/LLVM/llvm-project/build/lib/libmlir_runner_utils.so,/scratch/ia2280/LLVM/llvm-project/build/lib/libmlir_c_runner_utils.so,/scratch/ia2280/LLVM/llvm-project/build/lib/libomp.so
+export LLVM_PATH=/scratch/mt5383/llvm-project
+export SHARED_LIBS=/scratch/mt5383/llvm-project/build-mlir/lib/libmlir_runner_utils.so,/scratch/mt5383/llvm-project/build-mlir/lib/libmlir_c_runner_utils.so,/scratch/mt5383/llvm-project/build/lib/libomp.so
 export AS_VERBOSE=1
 time ./bin/AutoSchedulerML ../benchmarks/matmul.mlir
 
