@@ -206,7 +206,7 @@ SmallVector<Node *, 2> Vectorization::createVectorizationCandidates(Node *node,
           IRRewriter rewriter(context);
 
           FailureOr<scf::SCFTilingResult> maybeTiled =
-              scf::tileUsingSCFForOp(rewriter, ClonedTileableOp, options);
+              scf::tileUsingSCF(rewriter, ClonedTileableOp, options);
           std::cout << "END OF TILE CONV2D\n";
 
           if (!failed(maybeTiled))
@@ -264,7 +264,7 @@ SmallVector<Node *, 2> Vectorization::createVectorizationCandidates(Node *node,
               IRRewriter rewriter(context);
 
               FailureOr<scf::SCFTilingResult> maybeTiled =
-                  scf::tileUsingSCFForOp(rewriter, ClonedTileableOp, options);
+                  scf::tileUsingSCF(rewriter, ClonedTileableOp, options);
               std::cout << "END OF TILE CONV2D\n";
 
               if (!failed(maybeTiled))
@@ -286,7 +286,7 @@ SmallVector<Node *, 2> Vectorization::createVectorizationCandidates(Node *node,
                       IRRewriter rewriter(context);
 
                       FailureOr<scf::SCFTilingResult> maybeTiled =
-                              scf::tileUsingSCFForOp(rewriter, ClonedTileableOp, options);
+                              scf::tileUsingSCF(rewriter, ClonedTileableOp, options);
 
                       if (!failed(maybeTiled))
                               rewriter.replaceOp(ClonedTileableOp, maybeTiled->loops.front()->getResults());

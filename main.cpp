@@ -41,7 +41,9 @@
 #include "BeamSearch.h"
 #include "mlir/Tools/mlir-opt/MlirOptMain.h"
 #include <optional>
-#include "mlir/Dialect/Transform/IR/TransformInterfaces.h"
+#include "mlir/Dialect/Transform/Interfaces/TransformInterfaces.h"
+#include "mlir/Dialect/SCF/TransformOps/SCFTransformOps.h"
+#include "mlir/Dialect/Linalg/TransformOps/LinalgTransformOps.h"
 #include "mlir/IR/AsmState.h"
 #include "mlir/IR/Dialect.h"
 #include "mlir/IR/MLIRContext.h"
@@ -453,7 +455,9 @@ int main(int argc, char **argv)
             ToDecompose = true;
 
             FailureOr<scf::SCFTilingResult> maybeTiled =
-                scf::tileUsingSCFForOp(rewriter, ClonedTileableOp, options);
+                scf::tileUsingSCF(rewriter, ClonedTileableOp, options);
+
+            
 
             std::cerr << "END OF TILE CONV2D" << std::endl;
             // If tiling was successful, replace the original op with the tiled version

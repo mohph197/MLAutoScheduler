@@ -13,7 +13,7 @@
 #ifndef MLSCEDULER_TRANSFORM_TRANSFORM_INTERPRETER_PASSBASE_H
 #define MLSCEDULER_TRANSFORM_TRANSFORM_INTERPRETER_PASSBASE_H
 
-#include "mlir/Dialect/Transform/IR/TransformInterfaces.h"
+#include "mlir/Dialect/Transform/Interfaces/TransformInterfaces.h"
 #include "mlir/InitAllDialects.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Dialect/Transform/Transforms/TransformInterpreterUtils.h"

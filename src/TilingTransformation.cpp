@@ -282,7 +282,7 @@ SmallVector<Node *, 2> Tiling::createTilingCandidates(Node *node,
       {*/
         IRRewriter rewriter(context);
         FailureOr<scf::SCFTilingResult> maybeTiled =
-            scf::tileUsingSCFForOp(rewriter, ClonedTileableOp, tiling->getOptions());
+            scf::tileUsingSCF(rewriter, ClonedTileableOp, tiling->getOptions());
         // FailureOr<scf::SCFTileAndFuseResult> maybeTiled =
         // mlir::scf::tileConsumerAndFuseProducerGreedilyUsingSCFForOp(rewriter,ClonedTileableOp,tiling->getOptions());
         node->setCurrentStage(node->getCurrentStage() - 1);
@@ -310,7 +310,7 @@ SmallVector<Node *, 2> Tiling::createTilingCandidates(Node *node,
         if ((op->getName().getStringRef()).str() != "linalg.fill" ){
             IRRewriter rewriter(context);
             FailureOr<scf::SCFTilingResult> maybeTiled =
-                    scf::tileUsingSCFForOp(rewriter, ClonedTileableOp, tiling->getOptions());
+                    scf::tileUsingSCF(rewriter, ClonedTileableOp, tiling->getOptions());
             //FailureOr<scf::SCFTileAndFuseResult> maybeTiled =
                //mlir::scf::tileConsumerAndFuseProducerGreedilyUsingSCFForOp(rewriter,ClonedTileableOp,tiling->getOptions());
             if (!failed(maybeTiled))

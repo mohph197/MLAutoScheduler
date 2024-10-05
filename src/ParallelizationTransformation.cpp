@@ -475,7 +475,7 @@ SmallVector<Node *, 2> Parallelization::createParallelizationCandidates(Node *no
         opFoldResults.push_back(builder.getIndexAttr(value));
       }
       rewriter.setInsertionPoint(ClonedTileableOp);
-      ArrayRef<OpFoldResult> tileSizes = llvm::makeArrayRef(opFoldResults);
+      ArrayRef<OpFoldResult> tileSizes = llvm::ArrayRef(opFoldResults);
       FailureOr<linalg::ForallTilingResult> tilingResult =
           linalg::tileToForallOpUsingTileSizes(rewriter, ClonedTileableOp, tileSizes, mapping);
       if (!failed(tilingResult))

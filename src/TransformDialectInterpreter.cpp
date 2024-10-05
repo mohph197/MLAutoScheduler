@@ -12,7 +12,7 @@
 //===----------------------------------------------------------------------===//
 
 // #include "TestTransformDialectExtension.h"
-#include "mlir/Dialect/Transform/IR/TransformInterfaces.h"
+#include "mlir/Dialect/Transform/Interfaces/TransformInterfaces.h"
 #include "mlir/Dialect/Transform/IR/TransformOps.h"
 #include "TransformInterpreterPassBase.h"
 #include "mlir/Dialect/Transform/DebugExtension/DebugExtensionOps.h.inc"
