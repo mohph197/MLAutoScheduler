@@ -28,8 +28,11 @@
 
 # Executables
 *.exe
-*.out
 *.app
+
+# Debug files
+*.out
+*.err
 
 build-*
 build*

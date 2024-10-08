@@ -143,7 +143,6 @@ std::string EvaluationByExecution::evaluateTransformation(Node *node)
 
     // pm.addPass(createTestTransformDialectEraseSchedulePass());
     pm.addPass(mlir::createLoopInvariantCodeMotionPass());
-    pm.addPass(mlir::createCSEPass());
     pm.addPass(mlir::createCanonicalizerPass());
     pm.addPass(mlir::createCSEPass());
 
@@ -154,29 +153,30 @@ std::string EvaluationByExecution::evaluateTransformation(Node *node)
 
     mlir::OpPassManager &optPM = pm.nest<mlir::func::FuncOp>();
 
+    optPM.addPass(mlir::bufferization::createFinalizingBufferizePass());
     optPM.addPass(mlir::bufferization::createBufferDeallocationPass());
-    // optPM.addPass(mlir::bufferization::createFinalizingBufferizePass());
-    // pm.addPass(mlir::createBufferizationToMemRefPass());
+    pm.addPass(mlir::createBufferizationToMemRefPass());
     // optPM.addPass(mlir::bufferization::createBufferDeallocationPass());
 
-    optPM.addPass(mlir::createConvertLinalgToLoopsPass());
-    optPM.addPass(mlir::createForEachThreadLowering());
     pm.addPass(mlir::createConvertVectorToSCFPass());
+    pm.addPass(mlir::createConvertLinalgToLoopsPass());
+    // optPM.addPass(mlir::createForEachThreadLowering());
     pm.addPass(mlir::createConvertSCFToOpenMPPass());
-    pm.addPass(mlir::createCanonicalizerPass());
-    optPM.addPass(mlir::createLowerAffinePass());
-    optPM.addPass(memref::createExpandStridedMetadataPass());
-    pm.addPass(mlir::createFinalizeMemRefToLLVMConversionPass());
     pm.addPass(mlir::createConvertSCFToCFPass());
+    pm.addPass(memref::createExpandStridedMetadataPass());
     pm.addPass(mlir::createLowerAffinePass());
-    pm.addPass(createConvertMathToLLVMPass());
-    optPM.addPass(mlir::createArithToLLVMConversionPass());
-
-    pm.addPass(createConvertOpenMPToLLVMPass());
-    pm.addPass(createConvertVectorToLLVMPass());
-    pm.addPass(createConvertControlFlowToLLVMPass());
+    pm.addPass(mlir::createConvertMathToLLVMPass());
+    pm.addPass(mlir::createConvertVectorToLLVMPass());
+    pm.addPass(mlir::createFinalizeMemRefToLLVMConversionPass());
     pm.addPass(mlir::createConvertFuncToLLVMPass());
+    pm.addPass(mlir::createConvertIndexToLLVMPass());
+    pm.addPass(mlir::createArithToLLVMConversionPass());
+    pm.addPass(mlir::createConvertOpenMPToLLVMPass());
+    pm.addPass(mlir::createConvertControlFlowToLLVMPass());
+
     pm.addPass(mlir::createReconcileUnrealizedCastsPass());
+    pm.addPass(mlir::createCanonicalizerPass());
+    pm.addPass(mlir::createCSEPass());
 
     if (!mlir::failed(pm.run((op))))
         (op)->print(output_run);
