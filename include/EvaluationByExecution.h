@@ -44,10 +44,11 @@
 using namespace mlir;
 class EvaluationByExecution {
     public:
+        std::string functionName;
         std::string LogsFileName;
 
         EvaluationByExecution();
-        EvaluationByExecution(std::string LogsFileName);
+        EvaluationByExecution(std::string functionName);
         /// Evaluates the transformation by executing it with the given parameters.
         /// Parameters:
         /// - registry: A reference to the DialectRegistry used for execution.

@@ -239,8 +239,7 @@ int main(int argc, char **argv)
   // Create a root Node for transformations
   Node *root = new Node(&codeIr, 0);
   // Initialize an evaluator for transformation evaluations
-  EvaluationByExecution evaluator = 
-      EvaluationByExecution(functionName + "_logs_best_exhustive_debug_single_op_vect_DNNFuison_producers_multiple_ties.txt");
+  EvaluationByExecution evaluator = EvaluationByExecution(functionName);
 
   /*std::string RootEvel = evaluator.evaluateTransformation(root);
   root->setEvaluation(RootEvel);

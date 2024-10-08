@@ -39,4 +39,5 @@ build*
 build/*
 logs/*
 benchmarks/results/*
+lqcd-benchmarks/
 .vscode/

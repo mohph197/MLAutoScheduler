@@ -13,7 +13,7 @@
 
 using namespace mlir;
 std::string getTransformedCode(std::string inputCode, std::string transfromDialectString);
-std::string getEvaluation(std::string inputCode);
+std::string getEvaluation(std::string inputCode, std::string functionName);
 std::string removeExtraModuleTagCreated(std::string input);
 pid_t popen2(const char *command, int *infp, int *outfp);
 pid_t popen22(const char *command, int *infp, int *outfp);
@@ -21,15 +21,16 @@ pid_t popen22(const char *command, int *infp, int *outfp);
 EvaluationByExecution::EvaluationByExecution()
 {
 }
-EvaluationByExecution::EvaluationByExecution(std::string LogsFileName)
+EvaluationByExecution::EvaluationByExecution(std::string functionName)
 {
-    this->LogsFileName = LogsFileName;
+    this->functionName = functionName;
+    this->LogsFileName = functionName + "_logs_best_exhustive_debug_single_op_vect_DNNFuison_producers_multiple_ties.txt";
 }
 std::string EvaluationByExecution::evaluateTransformation(Node *node)
 {
     std::string str1;
     llvm::raw_string_ostream output(str1);
- 
+
     MLIRCodeIR *CodeIr = (MLIRCodeIR *)node->getTransformedCodeIr();
     MLIRCodeIR *ClonedCode = (MLIRCodeIR *)CodeIr->cloneIr();
 
@@ -72,7 +73,7 @@ std::string EvaluationByExecution::evaluateTransformation(Node *node)
             }
         }
     }
- 
+
     /*mlir::PassManager pmBefore((*op).get()->getName());
 
     // Apply any generic pass manager command line options and run the pipeline.
@@ -186,7 +187,7 @@ std::string EvaluationByExecution::evaluateTransformation(Node *node)
     // Getting the evaluation uisng mlir-cpu-runner, the function uses a system call
     // auto start_eval = std::chrono::high_resolution_clock::now();
 
-    std::string OutputData = getEvaluation(outString);
+    std::string OutputData = getEvaluation(outString, this->functionName);
 
     // op->dump();
 
@@ -272,6 +273,55 @@ pid_t popen2(const char *command, int *infp, int *outfp)
 
     return pid;
 }
+
+pid_t pyopen(std::string functionName, int *infd, int *outfd)
+{
+    int p_stdin[2], p_stdout[2];
+    pid_t pid;
+
+    if (pipe(p_stdin) != 0 || pipe(p_stdout) != 0)
+        return -1;
+
+    pid = fork();
+
+    if (pid < 0)
+    {
+        close(p_stdin[READ]);
+        close(p_stdin[WRITE]);
+        close(p_stdout[READ]);
+        close(p_stdout[WRITE]);
+
+        return pid;
+    }
+    else if (pid == 0)
+    {
+        close(p_stdin[WRITE]);
+        dup2(p_stdin[READ], READ);
+        close(p_stdout[READ]);
+        dup2(p_stdout[WRITE], WRITE);
+        dup2(p_stdout[WRITE], STDERR_FILENO);
+
+        execl("python", "python", "run.py", functionName.c_str(), NULL);
+        perror("execl");
+        exit(1);
+    }
+
+    // Parent process
+    close(p_stdin[READ]);
+    close(p_stdout[WRITE]);
+    if (infd == NULL)
+        close(p_stdin[WRITE]);
+    else
+        *infd = p_stdin[WRITE];
+
+    if (outfd == NULL)
+        close(p_stdout[READ]);
+    else
+        *outfd = p_stdout[READ];
+
+    return pid;
+}
+
 /*pid_t popen22(const char *command, int *infp, int *outfp)
 {
     int p_stdin[2], p_stdout[2];
@@ -345,7 +395,7 @@ std::string removeExtraModuleTagCreated(std::string input) // TODO: Figure out w
 /// Returns the captured output as a string, optionally stripping
 /// newline characters from the output.
 
-std::string getEvaluation(std::string inputCode)
+std::string getEvaluation(std::string inputCode, std::string functionName = "")
 {
 
     std::string command = "";
@@ -353,7 +403,8 @@ std::string getEvaluation(std::string inputCode)
     pid_t pid;
 
     // Call popen2 to execute the command and get the input and output file descriptors
-    pid = popen2(command.c_str(), &in_fd, &out_fd);
+    // pid = popen2(command.c_str(), &in_fd, &out_fd);
+    pid = pyopen(functionName, &in_fd, &out_fd);
 
     if (pid < 0)
     {
@@ -414,25 +465,26 @@ std::string getEvaluation(std::string inputCode)
         int exit_status = WEXITSTATUS(status);
         printf("Cpu Runner Child process exited with status: %d\n", exit_status);
 
-        std::string evalString = "";
-        std::string data(output_data.begin(), output_data.end());
+        std::string evalString(output_data.begin(), output_data.end());
 
-        size_t lastGFLOPSPos = data.rfind("GFLOPS"); // Find the position of the last "GFLOPS"
-        if (lastGFLOPSPos != std::string::npos)
-        {
-            std::string substring = data.substr(0, lastGFLOPSPos - 1); // Extract the substring before the last "GFLOPS"
-            size_t spacePos = substring.rfind("GFLOPS");               // Find the position of the last space in the substring
+        // std::string evalString = "";
+        // std::string data(output_data.begin(), output_data.end());
+        // size_t lastGFLOPSPos = data.rfind("GFLOPS"); // Find the position of the last "GFLOPS"
+        // if (lastGFLOPSPos != std::string::npos)
+        // {
+        //     std::string substring = data.substr(0, lastGFLOPSPos - 1); // Extract the substring before the last "GFLOPS"
+        //     size_t spacePos = substring.rfind("GFLOPS");               // Find the position of the last space in the substring
 
-            if (spacePos != std::string::npos)
-            {
-                evalString = substring.substr(spacePos + 6); // Extract the number string after the last space
-            }
-        }
-        else
-        {
-            std::cout << "No GFLOPS found in the input string." << std::endl;
-            return "9000000000000000000";
-        }
+        //     if (spacePos != std::string::npos)
+        //     {
+        //         evalString = substring.substr(spacePos + 6); // Extract the number string after the last space
+        //     }
+        // }
+        // else
+        // {
+        //     std::cout << "No GFLOPS found in the input string." << std::endl;
+        //     return "9000000000000000000";
+        // }
         std::cout << evalString << std::endl;
 
         return evalString;
