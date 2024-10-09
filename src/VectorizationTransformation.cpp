@@ -464,7 +464,7 @@ pid_t popenvect(const char *command, int *infp, int *outfp)
     if (std::getenv("LLVM_PATH") != nullptr)
     {
       std::string llvm_path = std::getenv("LLVM_PATH");
-      std::string opt = llvm_path + "/build-mlir/bin/mlir-opt";
+      std::string opt = llvm_path + "/build/bin/mlir-opt";
       execl(opt.c_str(),
             "mlir-opt", "--test-transform-dialect-interpreter", "--test-transform-dialect-erase-schedule",
             NULL);
