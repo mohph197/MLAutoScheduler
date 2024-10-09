@@ -247,7 +247,7 @@ pid_t popen2(const char *command, int *infp, int *outfp)
         if (std::getenv("LLVM_PATH") != nullptr && std::getenv("SHARED_LIBS") != nullptr)
         {
             std::string llvm_path = std::getenv("LLVM_PATH");
-            std::string runner = llvm_path + "/build-mlir/bin/mlir-cpu-runner";
+            std::string runner = llvm_path + "/build/bin/mlir-cpu-runner";
             char *shared_libs = std::getenv("SHARED_LIBS");
             execl(runner.c_str(),
                   "mlir-cpu-runner", "-e", "main", "-entry-point-result=void",
@@ -351,7 +351,7 @@ pid_t pyopen(std::string functionName, int *infd, int *outfd)
         if (std::getenv("LLVM_PATH") != nullptr)
         {
             std::string llvm_path = std::getenv("LLVM_PATH");
-            std::string opt = llvm_path + "/build-mlir/bin/mlir-opt";
+            std::string opt = llvm_path + "/build/bin/mlir-opt";
             execl(opt.c_str(),
                   "mlir-opt", "--test-transform-dialect-interpreter", "--test-transform-dialect-erase-schedule",
                   NULL);
@@ -397,7 +397,6 @@ std::string removeExtraModuleTagCreated(std::string input) // TODO: Figure out w
 
 std::string getEvaluation(std::string inputCode, std::string functionName = "")
 {
-
     std::string command = "";
     int in_fd, out_fd;
     pid_t pid;
@@ -458,6 +457,7 @@ std::string getEvaluation(std::string inputCode, std::string functionName = "")
     // Wait for the child process to finish
     int status;
     waitpid(pid, &status, 0);
+
 
     // Check if the child process exited normally
     if (WIFEXITED(status))
