@@ -13,6 +13,7 @@
 
 #include "Evaluation.h"
 #include "Node.h"
+#include "Utils.h"
 #include "TransformDialectInterpreter.h"
 #include "TransformInterpreterPassBase.h"
 #include "CustomPasses/Passes.h"

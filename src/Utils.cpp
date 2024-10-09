@@ -325,6 +325,17 @@ std::unordered_map<std::string, std::pair<mlir::linalg::LinalgOp, LinalgMappingC
   return linalgOps;
 }
 
+bool hasVectorOps(mlir::Operation *prog)
+{
+  bool hasVectorOps = false;
+  prog->walk([&](mlir::Operation *op) {
+    if (op->getDialect()->getNamespace() == "vector") {
+      hasVectorOps = true;
+    }
+  });
+  return hasVectorOps;
+}
+
 std::pair<std::vector<std::string>, std::vector<std::string>> remove_duplicate_args(std::vector<std::string> args, std::vector<std::string> shapes)
 {
   std::vector<std::pair<std::string, std::string>> args_shapes;

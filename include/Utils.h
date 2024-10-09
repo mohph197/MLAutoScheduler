@@ -4,6 +4,7 @@
 #include "llvm/ADT/SmallVector.h"
 #include "mlir/Dialect/Utils/StaticValueUtils.h"
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
+#include "mlir/Dialect/Vector/TransformOps/VectorTransformOps.h"
 
 #include "mlir/Dialect/Transform/Transforms/TransformInterpreterUtils.h"
 #include "mlir/Dialect/Linalg/Transforms/Transforms.h"
@@ -65,6 +66,7 @@ void generateCandidateHelper(std::vector<unsigned> &values,
                              unsigned index);
 
 std::unordered_map<std::string, std::pair<mlir::linalg::LinalgOp, LinalgMappingClassification>> getLinalgOps(mlir::Operation *prog);
+bool hasVectorOps(mlir::Operation *prog);
 std::pair<std::vector<std::string>, std::vector<std::string>> remove_duplicate_args(std::vector<std::string> args, std::vector<std::string> shapes);
 std::string function_wrapper(const std::string &operation, const std::string &maps = "");
 
