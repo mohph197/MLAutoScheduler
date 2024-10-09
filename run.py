@@ -22,9 +22,20 @@ if __name__ == "__main__":
         print("Function name is required !", file=sys.stderr)
         sys.exit(1)
     function_name = sys.argv[1]
-    np_file = np.load(function_name + '.mlir.npz')
 
-    args_names: list[str] = sorted(np_file.files, key=lambda s: code.index(s))
+    full_function_name = os.path.join(
+        "lqcd-benchmarks",
+        "matrices_inner",
+        function_name + ".mlir"
+    )
+    with open(full_function_name, "r") as f:
+        original_code = f.read()
+
+    np_file = np.load(full_function_name + ".npz")
+    args_names: list[str] = sorted(
+        np_file.files,
+        key=lambda s: original_code.index(s)
+    )
     args_map: map[str, np.ndarray] = {arr: np_file[arr] for arr in args_names}
     args = []
     for arg_name in args_names:

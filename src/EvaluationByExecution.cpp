@@ -301,7 +301,8 @@ pid_t pyopen(std::string functionName, int *infd, int *outfd)
         dup2(p_stdout[WRITE], WRITE);
         dup2(p_stdout[WRITE], STDERR_FILENO);
 
-        execl("python", "python", "run.py", functionName.c_str(), NULL);
+        if (std::getenv("PYTHON") != nullptr)
+            execl(std::getenv("PYTHON"), "python", "/scratch/mt5383/MLAutoScheduler/run.py", functionName.c_str(), NULL);
         perror("execl");
         exit(1);
     }
