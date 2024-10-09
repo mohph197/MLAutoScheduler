@@ -38,7 +38,7 @@
 #include "ParallelizationTransformation.h"
 #include "VectorizationTransformation.h"
 #include "MLIRCodeIR.h"
-#include "BeamSearch.h"
+#include "HeuristicSearch.h"
 #include "mlir/Tools/mlir-opt/MlirOptMain.h"
 #include <optional>
 #include "mlir/Dialect/Transform/Interfaces/TransformInterfaces.h"
@@ -242,349 +242,349 @@ int main(int argc, char **argv)
   EvaluationByExecution evaluator = 
       EvaluationByExecution(functionName + "_logs_best_exhustive_debug_single_op_vect_DNNFuison_producers_multiple_ties.txt");
 
-  /*std::string RootEvel = evaluator.evaluateTransformation(root);
+  std::string RootEvel = evaluator.evaluateTransformation(root);
   root->setEvaluation(RootEvel);
-  BeamSearch* searcher = new BeamSearch(3, &context, functionName);
-  Node * res = searcher->runSearchMethod(root);*/
+  HeuristicSearch* searcher = new HeuristicSearch(&context, functionName);
+  Node * res = searcher->runSearchMethod(root);
 
-  // Store all the linalg operations found in the module
-  std::unordered_map<std::string, std::pair<mlir::linalg::LinalgOp, LinalgMappingClassification>> linalgOps = getLinalgOps(module1.get());
+  // // Store all the linalg operations found in the module
+  // std::unordered_map<std::string, std::pair<mlir::linalg::LinalgOp, LinalgMappingClassification>> linalgOps = getLinalgOps(module1.get());
 
-  // Track if transformations have been made or the best evaluation has been found
-  bool changed = false;
-  bool found = false;
+  // // Track if transformations have been made or the best evaluation has been found
+  // bool changed = false;
+  // bool found = false;
 
-  int stage = 0;
-  Node *bestEval;
-  bestEval = root;
+  // int stage = 0;
+  // Node *bestEval;
+  // bestEval = root;
 
-  // Evaluate the root transformation
-  std::string RootEvel = evaluator.evaluateTransformation(bestEval);
-  bestEval->setEvaluation(RootEvel);
-  changed = true;
-  stage = bestEval->getCurrentStage();
-  std::cerr << "Number of opeartions = " << linalgOps.size() << std::endl;
+  // // Evaluate the root transformation
+  // std::string RootEvel = evaluator.evaluateTransformation(bestEval);
+  // bestEval->setEvaluation(RootEvel);
+  // changed = true;
+  // stage = bestEval->getCurrentStage();
+  // std::cerr << "Number of opeartions = " << linalgOps.size() << std::endl;
 
-  /*for (auto op : linalgOps)
-  {
-    //(op.first)->dump();
-    std::cout << "Operation classification: " 
-    << getMappingTypeString(classifyLinalgOp(op.first)) << std::endl;
-  }*/
+  // /*for (auto op : linalgOps)
+  // {
+  //   //(op.first)->dump();
+  //   std::cout << "Operation classification: " 
+  //   << getMappingTypeString(classifyLinalgOp(op.first)) << std::endl;
+  // }*/
 
-  IRRewriter rewriter(&context);
+  // IRRewriter rewriter(&context);
 
-  SmallVector<Node *, 2> nodesToVect;
+  // SmallVector<Node *, 2> nodesToVect;
 
-  int fixedSize = linalgOps.size() - 1;
-  stage = fixedSize;
-  root->setCurrentStage(stage);
-  bestEval->setCurrentStage(stage);
+  // int fixedSize = linalgOps.size() - 1;
+  // stage = fixedSize;
+  // root->setCurrentStage(stage);
+  // bestEval->setCurrentStage(stage);
 
-  // Loop through each stage while there's other operations to explore
-  while (stage > 0)
-  {
-    // If no changes have been made in the current stage, move to the previous one
-    if (!changed)
-    {
-      stage--;
-      bestEval->setCurrentStage(stage);
-    }
-    // if ((linalgOps[stage]->getName().getStringRef()).str() != "linalg.fill")
-    // if ((linalgOps[stage]->getName().getStringRef()).str() == "linalg.pooling_nchw_max" 
-    // || (linalgOps[stage]->getName().getStringRef()).str() == "linalg.conv_2d_nchw_fchw")
-    //{
-    SmallVector<Node *, 2> optList;
+  // // Loop through each stage while there's other operations to explore
+  // while (stage > 0)
+  // {
+  //   // If no changes have been made in the current stage, move to the previous one
+  //   if (!changed)
+  //   {
+  //     stage--;
+  //     bestEval->setCurrentStage(stage);
+  //   }
+  //   // if ((linalgOps[stage]->getName().getStringRef()).str() != "linalg.fill")
+  //   // if ((linalgOps[stage]->getName().getStringRef()).str() == "linalg.pooling_nchw_max" 
+  //   // || (linalgOps[stage]->getName().getStringRef()).str() == "linalg.conv_2d_nchw_fchw")
+  //   //{
+  //   SmallVector<Node *, 2> optList;
 
-    // Get the linalg operation at the current stage
-    mlir::Operation *newOp = ((mlir::Operation *)(*((MLIRCodeIR *)bestEval->getTransformedCodeIr()))
-                                  .getIr());
+  //   // Get the linalg operation at the current stage
+  //   mlir::Operation *newOp = ((mlir::Operation *)(*((MLIRCodeIR *)bestEval->getTransformedCodeIr()))
+  //                                 .getIr());
 
-    linalgOps = getLinalgOps(newOp);
+  //   linalgOps = getLinalgOps(newOp);
 
-    // Save the stage of the operation to be potentially vectorized
-    int OpToVectStage = stage;
+  //   // Save the stage of the operation to be potentially vectorized
+  //   int OpToVectStage = stage;
 
-    std::cerr << " CURRET STAGE FOR PARALLIZATION : " << stage << std::endl;
+  //   std::cerr << " CURRET STAGE FOR PARALLIZATION : " << stage << std::endl;
 
-    // Generate candidate parallelization options for the current stage
-    optList = Parallelization::createParallelizationCandidates(bestEval, &context, stage, linalgOps);
+  //   // Generate candidate parallelization options for the current stage
+  //   optList = Parallelization::createParallelizationCandidates(bestEval, &context, stage, linalgOps);
 
-    changed = false;
+  //   changed = false;
 
-    // Set the child nodes of the current bestEval to the candidate nodes
-    bestEval->setChildrenNodes(optList);
+  //   // Set the child nodes of the current bestEval to the candidate nodes
+  //   bestEval->setChildrenNodes(optList);
 
-    // Loop through each candidate child node
-    for (auto node : optList)
-    {
-      // #ADDED to ADD interchange for matmul Nazim test
-      // mlir::Operation *newOp1 = ((mlir::Operation *)(*((MLIRCodeIR *)node1->getTransformedCodeIr()))
-      //                                .getIr());
-      // linalgOps = getLinalgOps(newOp1);
-      // SmallVector<Node *, 2> listTilingInterchange = Tiling::createTilingCandidates(node1, &context, stage, linalgOps);
+  //   // Loop through each candidate child node
+  //   for (auto node : optList)
+  //   {
+  //     // #ADDED to ADD interchange for matmul Nazim test
+  //     // mlir::Operation *newOp1 = ((mlir::Operation *)(*((MLIRCodeIR *)node1->getTransformedCodeIr()))
+  //     //                                .getIr());
+  //     // linalgOps = getLinalgOps(newOp1);
+  //     // SmallVector<Node *, 2> listTilingInterchange = Tiling::createTilingCandidates(node1, &context, stage, linalgOps);
 
-      // node1->setChildrenNodes(listTilingInterchange);
-      // for (auto node : listTilingInterchange)
-      // {
-      // #ADDED to ADD interchange for matmul Nazim test
+  //     // node1->setChildrenNodes(listTilingInterchange);
+  //     // for (auto node : listTilingInterchange)
+  //     // {
+  //     // #ADDED to ADD interchange for matmul Nazim test
 
-      nodesToVect.push_back(node);
+  //     nodesToVect.push_back(node);
 
-      found = false;
+  //     found = false;
 
-      // Evaluate the candidate child node and update its evaluation
-      std::string evel = evaluator.evaluateTransformation(node);
-      node->setEvaluation(evel);
+  //     // Evaluate the candidate child node and update its evaluation
+  //     std::string evel = evaluator.evaluateTransformation(node);
+  //     node->setEvaluation(evel);
 
-      // If the current candidate has a better evaluation than the current bestEval
-      if (std::stod(bestEval->getEvaluation()) > std::stod(evel))
-      {
-        std::cerr << "Changing the best Eval node" << std::endl;
-        bestEval = node;
-        stage = bestEval->getCurrentStage();
-        changed = true;
-      }
+  //     // If the current candidate has a better evaluation than the current bestEval
+  //     if (std::stod(bestEval->getEvaluation()) > std::stod(evel))
+  //     {
+  //       std::cerr << "Changing the best Eval node" << std::endl;
+  //       bestEval = node;
+  //       stage = bestEval->getCurrentStage();
+  //       changed = true;
+  //     }
 
-      // ## VECTORIZE ONE OP
-      // Clone the transformed code IR of the candidate child node
-      MLIRCodeIR *CodeIrVect = (MLIRCodeIR *)node->getTransformedCodeIr();
-      MLIRCodeIR *ClonedCodeVect = (MLIRCodeIR *)CodeIrVect->cloneIr();
+  //     // ## VECTORIZE ONE OP
+  //     // Clone the transformed code IR of the candidate child node
+  //     MLIRCodeIR *CodeIrVect = (MLIRCodeIR *)node->getTransformedCodeIr();
+  //     MLIRCodeIR *ClonedCodeVect = (MLIRCodeIR *)CodeIrVect->cloneIr();
 
-      // Create a new Node object with the cloned IR and current stage
-      Node *VectNode = new Node(ClonedCodeVect, node->getCurrentStage());
+  //     // Create a new Node object with the cloned IR and current stage
+  //     Node *VectNode = new Node(ClonedCodeVect, node->getCurrentStage());
 
-      // Copy the transformation list from the candidate child node
-      std::vector<Transformation *> TransList = node->getTransformationList();
-      VectNode->setTransformationList(TransList);
+  //     // Copy the transformation list from the candidate child node
+  //     std::vector<Transformation *> TransList = node->getTransformationList();
+  //     VectNode->setTransformationList(TransList);
 
-      // Create a new vectorization transformation for the linalg operation at OpToVectStage
-      Vectorization *vectorization =
-          new Vectorization(&linalgOps["operation" + std::to_string(OpToVectStage)].first,
-                            &context);
+  //     // Create a new vectorization transformation for the linalg operation at OpToVectStage
+  //     Vectorization *vectorization =
+  //         new Vectorization(&linalgOps["operation" + std::to_string(OpToVectStage)].first,
+  //                           &context);
 
-      // Add the vectorization transformation to the new Node
-      VectNode->setTransformation(vectorization);
-      VectNode->addTransformation(vectorization);
+  //     // Add the vectorization transformation to the new Node
+  //     VectNode->setTransformation(vectorization);
+  //     VectNode->addTransformation(vectorization);
 
-      mlir::Operation *ClonedOpVect = (mlir::Operation *)ClonedCodeVect->getIr();
+  //     mlir::Operation *ClonedOpVect = (mlir::Operation *)ClonedCodeVect->getIr();
 
-      linalgOps = getLinalgOps(ClonedOpVect);
+  //     linalgOps = getLinalgOps(ClonedOpVect);
 
-      // Get the cloned operation
-      mlir::Operation *OpVect = linalgOps["operation" + std::to_string(OpToVectStage)].first;
-      // Get the parent operation of the cloned operation
-      mlir::Operation *OpVectParent = OpVect->getParentOp();
+  //     // Get the cloned operation
+  //     mlir::Operation *OpVect = linalgOps["operation" + std::to_string(OpToVectStage)].first;
+  //     // Get the parent operation of the cloned operation
+  //     mlir::Operation *OpVectParent = OpVect->getParentOp();
 
-      //  linalgOps = getLinalgOps(ClonedOpVect);
+  //     //  linalgOps = getLinalgOps(ClonedOpVect);
 
-      // for (auto oper : linalgOps)
-      //{
-      // OpVect = linalgOps[OpToVectStage];
-      llvm::SmallVector<std::pair<mlir::linalg::LinalgOp, LinalgMappingClassification>, 4> parentOps; //= getLinalgOps(OpVectParent);
+  //     // for (auto oper : linalgOps)
+  //     //{
+  //     // OpVect = linalgOps[OpToVectStage];
+  //     llvm::SmallVector<std::pair<mlir::linalg::LinalgOp, LinalgMappingClassification>, 4> parentOps; //= getLinalgOps(OpVectParent);
 
-      int stageInParent = 0;
-      // Store the parent's linalg operations
-      OpVectParent->walk([&](mlir::linalg::LinalgOp op)
-                         {
-                  if (op->getNumResults() <= 1)
-                  {
-                        LinalgMappingClassification classification =  classifyLinalgOp(op);
-                        parentOps.push_back(std::make_pair(op, classification));
-                  } });
+  //     int stageInParent = 0;
+  //     // Store the parent's linalg operations
+  //     OpVectParent->walk([&](mlir::linalg::LinalgOp op)
+  //                        {
+  //                 if (op->getNumResults() <= 1)
+  //                 {
+  //                       LinalgMappingClassification classification =  classifyLinalgOp(op);
+  //                       parentOps.push_back(std::make_pair(op, classification));
+  //                 } });
 
-      // Loop through each parent linalg operation
-      while (stageInParent < parentOps.size())
-      {
-        std::cerr << "Stage in parent = " << stageInParent << "  of : " << parentOps.size() << std::endl;
+  //     // Loop through each parent linalg operation
+  //     while (stageInParent < parentOps.size())
+  //     {
+  //       std::cerr << "Stage in parent = " << stageInParent << "  of : " << parentOps.size() << std::endl;
 
-        bool ToDecompose = false;
+  //       bool ToDecompose = false;
 
-        // Get the current operation
-        mlir::Operation *op = parentOps[stageInParent].first;
+  //       // Get the current operation
+  //       mlir::Operation *op = parentOps[stageInParent].first;
 
-        // If the parent operation needs tiling to be decomposed (e.g., conv2d, pooling)
-        if (mlir::TilingInterface ClonedTileableOp = dyn_cast<mlir::TilingInterface>(op))
-        {
-          if ((op->getName().getStringRef()).str() == "linalg.pooling_nchw_max" 
-          || (op->getName().getStringRef()).str() == "linalg.pooling_nchw_sum" 
-          || (op->getName().getStringRef()).str() == "linalg.conv_2d_nchw_fchw")
-          {
-            llvm::SmallVector<int64_t, 4> tilingSizes;
-            OpBuilder builder(&context);
-            SmallVector<Range> iterationDomain = ClonedTileableOp.getIterationDomain(builder);
-            for (size_t i = 0; i < iterationDomain.size(); ++i)
-            {
-              if (i == 2)
-              {
-                tilingSizes.push_back(1); // DEPENDS on the 'h' and the type of the conv2D
-              }
-              else if (((op->getName().getStringRef()).str() == "linalg.pooling_nchw_max" 
-              || (op->getName().getStringRef()).str() == "linalg.pooling_nchw_sum") 
-              && i == 4)
-              {
-                tilingSizes.push_back(1); // DEPENDS on the 'h' and the type of the pooling
-                break;
-              }
-              else if ((op->getName().getStringRef()).str() == "linalg.conv_2d_nchw_fchw" 
-              && i == 5)
-              {
-                tilingSizes.push_back(1); // DEPENDS on the 'h' and the type of the conv2D
-                break;
-              }
-              else
-              {
-                tilingSizes.push_back(0);
-              }
-            }
-            scf::SCFTilingOptions options;
-            SmallVector<OpFoldResult> mixedSizes = getMixedSizes(tilingSizes, &context);
-            options.setTileSizes(mixedSizes);
+  //       // If the parent operation needs tiling to be decomposed (e.g., conv2d, pooling)
+  //       if (mlir::TilingInterface ClonedTileableOp = dyn_cast<mlir::TilingInterface>(op))
+  //       {
+  //         if ((op->getName().getStringRef()).str() == "linalg.pooling_nchw_max" 
+  //         || (op->getName().getStringRef()).str() == "linalg.pooling_nchw_sum" 
+  //         || (op->getName().getStringRef()).str() == "linalg.conv_2d_nchw_fchw")
+  //         {
+  //           llvm::SmallVector<int64_t, 4> tilingSizes;
+  //           OpBuilder builder(&context);
+  //           SmallVector<Range> iterationDomain = ClonedTileableOp.getIterationDomain(builder);
+  //           for (size_t i = 0; i < iterationDomain.size(); ++i)
+  //           {
+  //             if (i == 2)
+  //             {
+  //               tilingSizes.push_back(1); // DEPENDS on the 'h' and the type of the conv2D
+  //             }
+  //             else if (((op->getName().getStringRef()).str() == "linalg.pooling_nchw_max" 
+  //             || (op->getName().getStringRef()).str() == "linalg.pooling_nchw_sum") 
+  //             && i == 4)
+  //             {
+  //               tilingSizes.push_back(1); // DEPENDS on the 'h' and the type of the pooling
+  //               break;
+  //             }
+  //             else if ((op->getName().getStringRef()).str() == "linalg.conv_2d_nchw_fchw" 
+  //             && i == 5)
+  //             {
+  //               tilingSizes.push_back(1); // DEPENDS on the 'h' and the type of the conv2D
+  //               break;
+  //             }
+  //             else
+  //             {
+  //               tilingSizes.push_back(0);
+  //             }
+  //           }
+  //           scf::SCFTilingOptions options;
+  //           SmallVector<OpFoldResult> mixedSizes = getMixedSizes(tilingSizes, &context);
+  //           options.setTileSizes(mixedSizes);
 
-            std::cerr << "Modified tilingSizes " << (op->getName().getStringRef()).str() << " : [";
-            for (size_t i = 0; i < tilingSizes.size(); ++i)
-            {
-              std::cerr << tilingSizes[i];
-              if (i < tilingSizes.size() - 1)
-              {
-                std::cerr << ", ";
-              }
-            }
-            std::cerr << "]\n";
+  //           std::cerr << "Modified tilingSizes " << (op->getName().getStringRef()).str() << " : [";
+  //           for (size_t i = 0; i < tilingSizes.size(); ++i)
+  //           {
+  //             std::cerr << tilingSizes[i];
+  //             if (i < tilingSizes.size() - 1)
+  //             {
+  //               std::cerr << ", ";
+  //             }
+  //           }
+  //           std::cerr << "]\n";
 
-            ToDecompose = true;
+  //           ToDecompose = true;
 
-            FailureOr<scf::SCFTilingResult> maybeTiled =
-                scf::tileUsingSCF(rewriter, ClonedTileableOp, options);
+  //           FailureOr<scf::SCFTilingResult> maybeTiled =
+  //               scf::tileUsingSCF(rewriter, ClonedTileableOp, options);
 
             
 
-            std::cerr << "END OF TILE CONV2D" << std::endl;
-            // If tiling was successful, replace the original op with the tiled version
-            if (!failed(maybeTiled))
-              rewriter.replaceOp(ClonedTileableOp, maybeTiled->loops.front()->getResults());
-          }
-        }
+  //           std::cerr << "END OF TILE CONV2D" << std::endl;
+  //           // If tiling was successful, replace the original op with the tiled version
+  //           if (!failed(maybeTiled))
+  //             rewriter.replaceOp(ClonedTileableOp, maybeTiled->loops.front()->getResults());
+  //         }
+  //       }
 
-        if (ToDecompose)
-        {
-          std::cerr << "START DECOMPOSE" << std::endl;
+  //       if (ToDecompose)
+  //       {
+  //         std::cerr << "START DECOMPOSE" << std::endl;
 
-          parentOps.clear();
-          OpVectParent->walk([&](mlir::linalg::LinalgOp op)
-                             {
-                  if (op->getNumResults() <= 1)
-                  {
-                        LinalgMappingClassification classification =  classifyLinalgOp(op);
-                        parentOps.push_back(std::make_pair(op, classification));
-                  } });
+  //         parentOps.clear();
+  //         OpVectParent->walk([&](mlir::linalg::LinalgOp op)
+  //                            {
+  //                 if (op->getNumResults() <= 1)
+  //                 {
+  //                       LinalgMappingClassification classification =  classifyLinalgOp(op);
+  //                       parentOps.push_back(std::make_pair(op, classification));
+  //                 } });
 
-          mlir::Operation *op1 = parentOps[stageInParent].first;
+  //         mlir::Operation *op1 = parentOps[stageInParent].first;
 
-          if (mlir::linalg::LinalgOp LinalgOpVect = dyn_cast<mlir::linalg::LinalgOp>(op1))
-          {
-            mlir::linalg::LinalgOp DecomposedTarget = DecomposeOp(LinalgOpVect, &rewriter);
-            std::cerr << "END DECOMPOSE" << std::endl;
-          }
-        }
+  //         if (mlir::linalg::LinalgOp LinalgOpVect = dyn_cast<mlir::linalg::LinalgOp>(op1))
+  //         {
+  //           mlir::linalg::LinalgOp DecomposedTarget = DecomposeOp(LinalgOpVect, &rewriter);
+  //           std::cerr << "END DECOMPOSE" << std::endl;
+  //         }
+  //       }
 
-        parentOps.clear();
-        OpVectParent->walk([&](mlir::linalg::LinalgOp op)
-                           {
-                  if (op->getNumResults() <= 1)
-                  {
-                        LinalgMappingClassification classification =  classifyLinalgOp(op);
-                        parentOps.push_back(std::make_pair(op, classification));
-                  } });
+  //       parentOps.clear();
+  //       OpVectParent->walk([&](mlir::linalg::LinalgOp op)
+  //                          {
+  //                 if (op->getNumResults() <= 1)
+  //                 {
+  //                       LinalgMappingClassification classification =  classifyLinalgOp(op);
+  //                       parentOps.push_back(std::make_pair(op, classification));
+  //                 } });
 
-        // Get the operation after decomposition
-        mlir::Operation *op2 = parentOps[stageInParent].first;
+  //       // Get the operation after decomposition
+  //       mlir::Operation *op2 = parentOps[stageInParent].first;
 
-        // If the op is a linalg op, attempt to vectorize it
-        if (linalg::LinalgOp linalgOp = dyn_cast<linalg::LinalgOp>(op2))
-        {
-          llvm::ArrayRef<int64_t> emptyArrayRef;
+  //       // If the op is a linalg op, attempt to vectorize it
+  //       if (linalg::LinalgOp linalgOp = dyn_cast<linalg::LinalgOp>(op2))
+  //       {
+  //         llvm::ArrayRef<int64_t> emptyArrayRef;
 
-          llvm::ArrayRef<bool> boolArrayRef;
+  //         llvm::ArrayRef<bool> boolArrayRef;
 
-          mlir::LogicalResult vectorized = mlir::linalg::vectorize(rewriter, op2, emptyArrayRef,
-                                                                   boolArrayRef, false);
+  //         mlir::LogicalResult vectorized = mlir::linalg::vectorize(rewriter, op2, emptyArrayRef,
+  //                                                                  boolArrayRef, false);
 
-          std::cerr << "GREEDILY APPLY AND FOLD " << vectorized.succeeded() << std::endl;
+  //         std::cerr << "GREEDILY APPLY AND FOLD " << vectorized.succeeded() << std::endl;
 
-          RewritePatternSet patterns(&context);
+  //         RewritePatternSet patterns(&context);
 
-          // Add vectorization canonicalization and lowering patterns to the set
-          mlir::transform::detail::VectorizeOpGenericAdaptorBase::Properties props;
+  //         // Add vectorization canonicalization and lowering patterns to the set
+  //         mlir::transform::detail::VectorizeOpGenericAdaptorBase::Properties props;
 
-          // if (!props.getDisableTransferPermutationMapLoweringPatterns())
-          mlir::vector::populateVectorTransferPermutationMapLoweringPatterns(patterns);
+  //         // if (!props.getDisableTransferPermutationMapLoweringPatterns())
+  //         mlir::vector::populateVectorTransferPermutationMapLoweringPatterns(patterns);
 
-          // if (!props.getDisableMultiReductionToContractPatterns())
-          vector::populateVectorReductionToContractPatterns(patterns);
+  //         // if (!props.getDisableMultiReductionToContractPatterns())
+  //         vector::populateVectorReductionToContractPatterns(patterns);
 
-          vector::populateSinkVectorBroadcastPatterns(patterns);
+  //         vector::populateSinkVectorBroadcastPatterns(patterns);
 
-          // Add additional vectorization patterns for specific operations
-          patterns.add<linalg::LinalgCopyVTRForwardingPattern,
-                       linalg::LinalgCopyVTWForwardingPattern>(&context, 2);
-          vector::TransferReadOp::getCanonicalizationPatterns(patterns, &context);
-          vector::TransferWriteOp::getCanonicalizationPatterns(patterns, &context);
-          tensor::populateFoldTensorSubsetIntoVectorTransferPatterns(patterns);
+  //         // Add additional vectorization patterns for specific operations
+  //         patterns.add<linalg::LinalgCopyVTRForwardingPattern,
+  //                      linalg::LinalgCopyVTWForwardingPattern>(&context, 2);
+  //         vector::TransferReadOp::getCanonicalizationPatterns(patterns, &context);
+  //         vector::TransferWriteOp::getCanonicalizationPatterns(patterns, &context);
+  //         tensor::populateFoldTensorSubsetIntoVectorTransferPatterns(patterns);
 
-          patterns.add<mlir::linalg::CopyVectorizationPattern>(&context);
+  //         patterns.add<mlir::linalg::CopyVectorizationPattern>(&context);
 
-          // if (props.getVectorizePadding())
-          // linalg::populatePadOpVectorizationPatterns(patterns);
+  //         // if (props.getVectorizePadding())
+  //         // linalg::populatePadOpVectorizationPatterns(patterns);
 
-          if (!failed(applyPatternsAndFoldGreedily(ClonedOpVect, std::move(patterns))))
-          {
-            std::cerr << "APPLY NOT FAILED" << std::endl;
-            parentOps.clear();
+  //         if (!failed(applyPatternsAndFoldGreedily(ClonedOpVect, std::move(patterns))))
+  //         {
+  //           std::cerr << "APPLY NOT FAILED" << std::endl;
+  //           parentOps.clear();
 
-            OpVectParent->walk([&](mlir::linalg::LinalgOp op)
-                               {
-                  if (op->getNumResults() <= 1)
-                  {
-                        LinalgMappingClassification classification =  classifyLinalgOp(op);
-                        parentOps.push_back(std::make_pair(op, classification));
-                  } });
-            stageInParent--;
-          }
-          if (!vectorized.succeeded())
-          {
-            parentOps.pop_back();
-            stageInParent++;
-          }
-          // ######### GREEDILY APPLY AND FOLD #################*/
-        }
-        stageInParent++;
-      }
-      // ## VECTORIZE ONE OP
+  //           OpVectParent->walk([&](mlir::linalg::LinalgOp op)
+  //                              {
+  //                 if (op->getNumResults() <= 1)
+  //                 {
+  //                       LinalgMappingClassification classification =  classifyLinalgOp(op);
+  //                       parentOps.push_back(std::make_pair(op, classification));
+  //                 } });
+  //           stageInParent--;
+  //         }
+  //         if (!vectorized.succeeded())
+  //         {
+  //           parentOps.pop_back();
+  //           stageInParent++;
+  //         }
+  //         // ######### GREEDILY APPLY AND FOLD #################*/
+  //       }
+  //       stageInParent++;
+  //     }
+  //     // ## VECTORIZE ONE OP
 
-      std::cerr << "END VECT" << std::endl;
+  //     std::cerr << "END VECT" << std::endl;
 
-      evel = evaluator.evaluateTransformation(VectNode);
-      VectNode->setEvaluation(evel);
-      if (std::stod(bestEval->getEvaluation()) > std::stod(evel))
-      {
-        std::cerr << "Changing the best Eval node" << std::endl;
-        bestEval = VectNode;
-        stage = bestEval->getCurrentStage();
-        changed = true;
-      }
+  //     evel = evaluator.evaluateTransformation(VectNode);
+  //     VectNode->setEvaluation(evel);
+  //     if (std::stod(bestEval->getEvaluation()) > std::stod(evel))
+  //     {
+  //       std::cerr << "Changing the best Eval node" << std::endl;
+  //       bestEval = VectNode;
+  //       stage = bestEval->getCurrentStage();
+  //       changed = true;
+  //     }
 
-      std::cerr << "New stage = " << stage << std::endl;
-    }
-    // }
-  }
+  //     std::cerr << "New stage = " << stage << std::endl;
+  //   }
+  //   // }
+  // }
 
   // Prepare the output JSON string
   std::ostringstream outputStringStream;
   outputStringStream << "{ \"name\" : \"" + functionName + "\" , \"evaluations\": [\n";
 
   // Print the schedule information to the output string
-  root->printSchedule(outputStringStream);
+  res->printSchedule(outputStringStream);
   outputStringStream << "]\n}]}";
 
   // Convert the output string to JSON and write it to a file
