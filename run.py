@@ -25,7 +25,7 @@ if __name__ == "__main__":
 
     full_function_name = os.path.join(
         "lqcd-benchmarks",
-        "matrices_inner",
+        os.getenv("MATRICES_FOLDER", "matrices"),
         function_name + ".mlir"
     )
     with open(full_function_name, "r") as f:
@@ -36,7 +36,7 @@ if __name__ == "__main__":
         np_file.files,
         key=lambda s: original_code.index(s)
     )
-    args_map: map[str, np.ndarray] = {arr: np_file[arr] for arr in args_names}
+    args_map: dict[str, np.ndarray] = {arr: np_file[arr] for arr in args_names}
     args = []
     for arg_name in args_names:
         args.append(ctypes.pointer(ctypes.pointer(
@@ -46,5 +46,8 @@ if __name__ == "__main__":
     delta_arg = (ctypes.c_int64 * 1)(0)
     args.append(delta_arg)
 
-    execution_engine.invoke("main", *args)
-    print(delta_arg[0] / 1e9)
+    deltas = []
+    for _ in range(5):
+        execution_engine.invoke("main", *args)
+        deltas.append(delta_arg[0] / 1e9)
+    print(np.median(deltas))

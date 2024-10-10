@@ -597,4 +597,15 @@ int main(int argc, char **argv)
 
   // Display a message indicating the end of exploration
   std::cerr << "End of exploration!" << std::endl;
+  std::cerr << "Best Execution Time: " << bestEval->getEvaluation() << std::endl;
+  if (std::getenv("MATRICES_FOLDER") != nullptr) {
+    std::ofstream debugFile;
+    std::string matricesFolderName = std::getenv("MATRICES_FOLDER");
+    debugFile.open(matricesFolderName + "_evaluations.txt", std::ios_base::app);
+    if (debugFile.is_open())
+    {
+      debugFile << bestEval->getEvaluation() << std::endl;
+      debugFile.close();
+    }
+  }
 }
