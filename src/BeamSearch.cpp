@@ -85,13 +85,13 @@ Node *BeamSearch::runSearchMethod(Node *root)
             // Evaluate each transformation candidate and store their evaluation results
             for (auto ChildNode : candidates)
             {
-                std::string evel = evaluator.evaluateTransformation(ChildNode);
+                double evel = evaluator.evaluateTransformation(ChildNode);
                 ChildNode->setEvaluation(evel);
             }
             // Sort the candidates based on their evaluation scores
             
             std::sort(candidates.begin(), candidates.end(), [](Node *a, Node *b)
-                      { return std::stod(a->getEvaluation()) < std::stod(b->getEvaluation()); });
+                      { return a->getEvaluation() < b->getEvaluation(); });
 
             // Set the children nodes of the current node (for printing the tree)
             node->setChildrenNodes(candidates);
@@ -104,7 +104,7 @@ Node *BeamSearch::runSearchMethod(Node *root)
 
         // Sort the level's schedule nodes from smallest to largest evaluation
         std::sort(level_schedules.begin(), level_schedules.end(), [](Node *a, Node *b)
-                  { return std::stod(a->getEvaluation()) < std::stod(b->getEvaluation()); });
+                  { return a->getEvaluation() < b->getEvaluation(); });
 
         /* // Forcing beam search to take one of the parent nodes in the next level
         std::sort(parent_nodes.begin(), parent_nodes.end(), [](Node *a, Node *b) {

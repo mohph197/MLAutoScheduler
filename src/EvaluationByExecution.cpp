@@ -13,7 +13,7 @@
 
 using namespace mlir;
 std::string getTransformedCode(std::string inputCode, std::string transfromDialectString);
-std::string getEvaluation(std::string inputCode, std::string functionName);
+double getEvaluation(std::string inputCode, std::string functionName);
 std::string removeExtraModuleTagCreated(std::string input);
 pid_t popen2(const char *command, int *infp, int *outfp);
 pid_t popen22(const char *command, int *infp, int *outfp);
@@ -26,7 +26,7 @@ EvaluationByExecution::EvaluationByExecution(std::string functionName)
     this->functionName = functionName;
     this->LogsFileName = functionName + "_logs_best_exhustive_debug_single_op_vect_DNNFuison_producers_multiple_ties.txt";
 }
-std::string EvaluationByExecution::evaluateTransformation(Node *node)
+double EvaluationByExecution::evaluateTransformation(Node *node)
 {
     std::string str1;
     llvm::raw_string_ostream output(str1);
@@ -192,7 +192,7 @@ std::string EvaluationByExecution::evaluateTransformation(Node *node)
     // Getting the evaluation uisng mlir-cpu-runner, the function uses a system call
     // auto start_eval = std::chrono::high_resolution_clock::now();
 
-    std::string OutputData = getEvaluation(outString, this->functionName);
+    double OutputData = getEvaluation(outString, this->functionName);
 
     // op->dump();
 
@@ -401,7 +401,7 @@ std::string removeExtraModuleTagCreated(std::string input) // TODO: Figure out w
 /// Returns the captured output as a string, optionally stripping
 /// newline characters from the output.
 
-std::string getEvaluation(std::string inputCode, std::string functionName = "")
+double getEvaluation(std::string inputCode, std::string functionName = "")
 {
     std::string command = "";
     int in_fd, out_fd;
@@ -489,16 +489,17 @@ std::string getEvaluation(std::string inputCode, std::string functionName = "")
         // else
         // {
         //     std::cout << "No GFLOPS found in the input string." << std::endl;
-        //     return "9000000000000000000";
+        //     return 9000000000000000000;
         // }
-        std::cout << evalString << std::endl;
+        double eval = std::stod(evalString);
+        std::cout << eval << std::endl;
 
-        return evalString;
+        return eval;
     }
     else
     {
         printf("Cpu Runner Child process did not exit normally.\n");
-        return "9000000000000000000";
+        return 9000000000000000000;
     }
 }
 

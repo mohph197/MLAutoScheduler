@@ -38,7 +38,6 @@
 #include "ParallelizationTransformation.h"
 #include "VectorizationTransformation.h"
 #include "MLIRCodeIR.h"
-#include "BeamSearch.h"
 #include "mlir/Tools/mlir-opt/MlirOptMain.h"
 #include <optional>
 #include "mlir/Dialect/Transform/Interfaces/TransformInterfaces.h"
@@ -241,7 +240,7 @@ int main(int argc, char **argv)
   // Initialize an evaluator for transformation evaluations
   EvaluationByExecution evaluator = EvaluationByExecution(functionName);
 
-  /*std::string RootEvel = evaluator.evaluateTransformation(root);
+  /*double RootEvel = evaluator.evaluateTransformation(root);
   root->setEvaluation(RootEvel);
   BeamSearch* searcher = new BeamSearch(3, &context, functionName);
   Node * res = searcher->runSearchMethod(root);*/
@@ -258,7 +257,7 @@ int main(int argc, char **argv)
   bestEval = root;
 
   // Evaluate the root transformation
-  std::string RootEvel = evaluator.evaluateTransformation(bestEval);
+  double RootEvel = evaluator.evaluateTransformation(bestEval);
   bestEval->setEvaluation(RootEvel);
   changed = true;
   stage = bestEval->getCurrentStage();
@@ -333,11 +332,11 @@ int main(int argc, char **argv)
       found = false;
 
       // Evaluate the candidate child node and update its evaluation
-      std::string evel = evaluator.evaluateTransformation(node);
+      double evel = evaluator.evaluateTransformation(node);
       node->setEvaluation(evel);
 
       // If the current candidate has a better evaluation than the current bestEval
-      if (std::stod(bestEval->getEvaluation()) > std::stod(evel))
+      if (bestEval->getEvaluation() > evel)
       {
         std::cerr << "Changing the best Eval node" << std::endl;
         bestEval = node;
@@ -565,7 +564,7 @@ int main(int argc, char **argv)
 
       evel = evaluator.evaluateTransformation(VectNode);
       VectNode->setEvaluation(evel);
-      if (std::stod(bestEval->getEvaluation()) > std::stod(evel))
+      if (bestEval->getEvaluation() > evel)
       {
         std::cerr << "Changing the best Eval node" << std::endl;
         bestEval = VectNode;
