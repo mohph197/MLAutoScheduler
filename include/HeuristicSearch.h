@@ -46,10 +46,12 @@
 #include <mlir/IR/MLIRContext.h>
 #include <mlir/Dialect/Linalg/IR/Linalg.h>
 
-// Forward declaration of Transformation and CodeIR (assuming they exist)
-class Transformation;
-class CodeIR;
-class Node;
+#include "Node.h"
+#include "Transformation.h"
+#include "CodeIR.h"
+#include "ParallelizationTransformation.h"
+#include "InterchangeTransformation.h"
+#include "VectorizationTransformation.h"
 
 // HeuristicNode class representing a node in the search tree
 class HeuristicNode {
