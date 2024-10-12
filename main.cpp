@@ -587,7 +587,7 @@ int main(int argc, char **argv)
 
   // Convert the output string to JSON and write it to a file
   std::string outputString = outputStringStream.str();
-  std::ofstream outputFile("./benchmark_exhustiveEval_" + functionName + ".json");
+  std::ofstream outputFile("log/" + functionName + "_exhaustive.json");
   if (!outputFile.is_open())
   {
     std::cerr << "Failed to open file: " << std::endl;
@@ -598,14 +598,10 @@ int main(int argc, char **argv)
   // Display a message indicating the end of exploration
   std::cerr << "End of exploration!" << std::endl;
   std::cerr << "Best Execution Time: " << bestEval->getEvaluation() << std::endl;
-  if (std::getenv("MATRICES_FOLDER") != nullptr) {
-    std::ofstream debugFile;
-    std::string matricesFolderName = std::getenv("MATRICES_FOLDER");
-    debugFile.open(matricesFolderName + "_evaluations.txt", std::ios_base::app);
-    if (debugFile.is_open())
-    {
-      debugFile << bestEval->getEvaluation() << std::endl;
-      debugFile.close();
-    }
+  std::ofstream debugFile("log/evaluations.txt", std::ios_base::app);
+  if (debugFile.is_open())
+  {
+    debugFile << functionName + ": " << bestEval->getEvaluation() << std::endl;
+    debugFile.close();
   }
 }

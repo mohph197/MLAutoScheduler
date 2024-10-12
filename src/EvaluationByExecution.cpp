@@ -24,7 +24,7 @@ EvaluationByExecution::EvaluationByExecution()
 EvaluationByExecution::EvaluationByExecution(std::string functionName)
 {
     this->functionName = functionName;
-    this->LogsFileName = functionName + "_logs_best_exhustive_debug_single_op_vect_DNNFuison_producers_multiple_ties.txt";
+    this->LogsFileName = "log/" + functionName + "_exhaustive_gen.txt";
 }
 double EvaluationByExecution::evaluateTransformation(Node *node)
 {

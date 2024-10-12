@@ -33,6 +33,7 @@
 # Debug files
 *.out
 *.err
+log/
 
 build-*
 build*

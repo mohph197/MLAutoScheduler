@@ -25,7 +25,6 @@ if __name__ == "__main__":
 
     full_function_name = os.path.join(
         "lqcd-benchmarks",
-        os.getenv("MATRICES_FOLDER", "matrices"),
         function_name + ".mlir"
     )
     with open(full_function_name, "r") as f:
