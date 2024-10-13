@@ -117,7 +117,7 @@ double EvaluationByExecution::evaluateTransformation(Node *node)
     std::string outString;
     llvm::raw_string_ostream output_run(outString);
 
-    if (hasVectorOps(op)) {
+    if (node->getTransformationList().size() > 0) {
         std::string transformDialectString = "module attributes {transform.with_named_sequence} { \n transform.named_sequence @__transform_main(%variant_op: !transform.any_op {transform.readonly})  { %f = transform.structured.match ops{[\"func.func\"]} in %variant_op : (!transform.any_op) -> !transform.any_op \n transform.apply_patterns to %f {  \n transform.apply_patterns.vector.lower_contraction lowering_strategy = \"outerproduct\" \n transform.apply_patterns.vector.transfer_permutation_patterns \n transform.apply_patterns.vector.lower_multi_reduction lowering_strategy = \"innerparallel\" \n transform.apply_patterns.vector.split_transfer_full_partial split_transfer_strategy = \"vector-transfer\" \n transform.apply_patterns.vector.transfer_to_scf max_transfer_rank = 1 full_unroll = true \n transform.apply_patterns.vector.lower_transfer max_transfer_rank = 1 \n transform.apply_patterns.vector.lower_shape_cast \n transform.apply_patterns.vector.lower_transpose lowering_strategy = \"shuffle_1d\" \n transform.apply_patterns.canonicalization} \n : !transform.any_op \n transform.yield}}";
         // std::cout << "START VECT\n";
 
@@ -145,9 +145,10 @@ double EvaluationByExecution::evaluateTransformation(Node *node)
     // pm.addPass(createTransformDialectInterpreterPass(transformDialectString));
 
     // pm.addPass(createTestTransformDialectEraseSchedulePass());
-    // pm.addPass(mlir::createLoopInvariantCodeMotionPass());
-    // pm.addPass(mlir::createCanonicalizerPass());
-    // pm.addPass(mlir::createCSEPass());
+    pm.addPass(mlir::createLoopInvariantCodeMotionPass());
+    pm.addPass(mlir::createCSEPass());
+    pm.addPass(mlir::createCanonicalizerPass());
+    pm.addPass(mlir::createCSEPass());
 
     // pm.addPass(mlir::bufferization::createEmptyTensorEliminationPass());
     // pm.addPass(mlir::bufferization::createEmptyTensorToAllocTensorPass());
@@ -168,12 +169,12 @@ double EvaluationByExecution::evaluateTransformation(Node *node)
     mlir::bufferization::buildBufferDeallocationPipeline(pm, options);
 
     pm.addPass(mlir::createConvertSCFToOpenMPPass());
-    pm.addPass(mlir::createConvertSCFToCFPass());
     pm.addPass(memref::createExpandStridedMetadataPass());
+    pm.addPass(mlir::createFinalizeMemRefToLLVMConversionPass());
+    pm.addPass(mlir::createConvertSCFToCFPass());
     pm.addPass(mlir::createLowerAffinePass());
     pm.addPass(mlir::createConvertMathToLLVMPass());
     pm.addPass(mlir::createConvertVectorToLLVMPass());
-    pm.addPass(mlir::createFinalizeMemRefToLLVMConversionPass());
     pm.addPass(mlir::createConvertFuncToLLVMPass());
     pm.addPass(mlir::createConvertIndexToLLVMPass());
     pm.addPass(mlir::createArithToLLVMConversionPass());

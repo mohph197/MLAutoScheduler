@@ -280,11 +280,13 @@ int main(int argc, char **argv)
   bestEval->setCurrentStage(stage);
 
   // Loop through each stage while there's other operations to explore
-  while (stage > 0)
+  while (stage >= 0)
   {
     // If no changes have been made in the current stage, move to the previous one
     if (!changed)
     {
+      if (stage == 0)
+        break;
       stage--;
       bestEval->setCurrentStage(stage);
     }

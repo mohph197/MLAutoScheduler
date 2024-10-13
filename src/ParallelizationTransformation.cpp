@@ -579,7 +579,10 @@ SmallVector<Node *, 2> Parallelization::createParallelizationCandidates(Node *no
 
       // FuseOps(ClonedTargetForFusion, linalgOpCurrentStageEqu, producers, consumerTag, nbFused);
       FuseOps(ClonedTarget, tilingResult->tileOp, producers, consumerTag, nbFused);
-      node->setCurrentStage(node->getCurrentStage() - 1);
+
+      scf::forallToParallelLoop(rewriter, dyn_cast<scf::ForallOp>(tilingResult->tileOp));
+      
+      // node->setCurrentStage(node->getCurrentStage() - 1);
       // ChildNodeForFusion->setCurrentStage(node->getCurrentStage());
       // FuseIntoContainingOperation(tilingResult->tileOp, ClonedTarget, rewriter1);
     }

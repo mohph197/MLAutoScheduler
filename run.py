@@ -45,8 +45,6 @@ if __name__ == "__main__":
     delta_arg = (ctypes.c_int64 * 1)(0)
     args.append(delta_arg)
 
-    deltas = []
-    for _ in range(5):
-        execution_engine.invoke("main", *args)
-        deltas.append(delta_arg[0] / 1e9)
-    print(np.median(deltas))
+    execution_engine.invoke("main", *args)
+    execution_engine.invoke("main", *args)
+    print(delta_arg[0] / 1e9)
