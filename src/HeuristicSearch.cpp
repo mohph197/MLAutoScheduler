@@ -86,46 +86,8 @@ HeuristicNode* HeuristicSearch::select(HeuristicNode* node) {
     return selectedNode;
 }
 
-// // Expand method - expands the selected node by creating child nodes for possible transformations
-// std::vector<HeuristicNode*> HeuristicSearch::expand(HeuristicNode* node, int level, int stage,
-//     std::unordered_map<std::string, std::pair<mlir::linalg::LinalgOp, std::string>> LinalgOpStages) {
-
-//     std::vector<HeuristicNode*> children;
-//     if (!node->getIsFullyExpanded()) {
-//         // Create candidate transformations (this depends on the search space you're exploring)
-//         std::vector<Transformation*> candidates;
-
-//         // Sample code to generate candidates based on level (customize this)
-//         switch (level) {
-//             case 0:
-//                 // Generate tiling candidates here
-//                 break;
-//             case 1:
-//                 // Generate parallelization candidates here
-//                 break;
-//             case 2:
-//                 // Generate interchange candidates here
-//                 break;
-//             case 3:
-//                 // Generate vectorization candidates here
-//                 break;
-//         }
-
-//         int index = 0;
-//         for (Transformation* candidate : candidates) {
-//             HeuristicNode* child = new HeuristicNode(node, level + 1, index++);
-//             node->addChild(child);
-//             children.push_back(child);
-//         }
-
-//         node->setIsFullyExpanded(true);
-//     }
-
-//     return children;
-// }
-
-std::vector<HeuristicNode*> HeuristicSearch::expand(HeuristicNode* node, int level, int stage,
-    std::unordered_map<std::string, std::pair<mlir::linalg::LinalgOp, std::string>> LinalgOpStages) {
+std::vector<HeuristicNode*> HeuristicSearch::expand(Node* node, int level, int stage,
+    std::unordered_map<std::string, std::pair<mlir::linalg::LinalgOp, LinalgMappingClassification>> LinalgOpStages) {
 
     std::vector<HeuristicNode*> children;
     SmallVector<Node*, 2> candidates;
@@ -199,6 +161,9 @@ void HeuristicSearch::backpropagate(HeuristicNode* node, double result) {
 // Run search method - main search loop that iterates over a number of iterations
 HeuristicNode* HeuristicSearch::runSearchMethod(HeuristicNode* root, 
     std::unordered_map<std::string, std::pair<mlir::linalg::LinalgOp, std::string>> LinalgOpStages, 
+    //! if the above didnt work, try this:
+    // std::unordered_map<std::string, std::pair<mlir::linalg::LinalgOp, LinalgMappingClassification>> LinalgOpStages, 
+
     int iterations) {
 
     std::random_device rd;
