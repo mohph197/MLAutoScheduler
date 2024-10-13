@@ -1,53 +1,53 @@
 //===---------------------- HeuristicSearch.cpp - Heuristic Search Implementation ----------------------===//
 //
-// This file implements the HeuristicSearch class and HeuristicNode class for heuristic-based tree search.
+// This file implements the HeuristicSearch class and adapts Node for heuristic-based tree search.
 //
 //===--------------------------------------------------------------------------------------------------===//
 
 #include "HeuristicSearch.h"
 
-// Constructor for HeuristicNode
-HeuristicNode::HeuristicNode(HeuristicNode* parent, int level, int index)
+// Constructor for Node
+Node::Node(Node* parent, int level, int index)
     : parent(parent), level(level), index(index), visitCount(0), isFullyExpanded(false), bestValue(0.0) {}
 
-// Getters and setters for HeuristicNode
-HeuristicNode* HeuristicNode::getParent() const { return parent; }
-void HeuristicNode::setParent(HeuristicNode* parent) { this->parent = parent; }
+// Getters and setters for Node
+Node* Node::getParent() const { return parent; }
+void Node::setParent(Node* parent) { this->parent = parent; }
 
-int HeuristicNode::getVisitCount() const { return visitCount; }
-void HeuristicNode::incrementVisitCount() { visitCount++; }
+int Node::getVisitCount() const { return visitCount; }
+void Node::incrementVisitCount() { visitCount++; }
 
-double HeuristicNode::getBestValue() const { return bestValue; }
-void HeuristicNode::setBestValue(double value) { bestValue = value; }
+double Node::getBestValue() const { return bestValue; }
+void Node::setBestValue(double value) { bestValue = value; }
 
-bool HeuristicNode::getIsFullyExpanded() const { return isFullyExpanded; }
-void HeuristicNode::setIsFullyExpanded(bool value) { isFullyExpanded = value; }
+bool Node::getIsFullyExpanded() const { return isFullyExpanded; }
+void Node::setIsFullyExpanded(bool value) { isFullyExpanded = value; }
 
-int HeuristicNode::getLevel() const { return level; }
-void HeuristicNode::setLevel(int level) { this->level = level; }
+int Node::getLevel() const { return level; }
+void Node::setLevel(int level) { this->level = level; }
 
-int HeuristicNode::getIndex() const { return index; }
-void HeuristicNode::setIndex(int index) { this->index = index; }
+int Node::getIndex() const { return index; }
+void Node::setIndex(int index) { this->index = index; }
 
 // Get the list of children nodes
-std::vector<HeuristicNode*>& HeuristicNode::getChildrenNodes() { return children; }
+std::vector<Node*>& Node::getChildrenNodes() { return children; }
 
 // Add a child node
-void HeuristicNode::addChild(HeuristicNode* child) {
+void Node::addChild(Node* child) {
     children.push_back(child);
 }
 
 // Clear all child nodes
-void HeuristicNode::clearChildren() {
+void Node::clearChildren() {
     children.clear();
 }
 
 // Get the best child node based on the heuristic score
-HeuristicNode* HeuristicNode::bestChild() {
-    HeuristicNode* bestNode = nullptr;
+Node* Node::bestChild() {
+    Node* bestNode = nullptr;
     double bestValue = std::numeric_limits<double>::infinity();
 
-    for (HeuristicNode* child : children) {
+    for (Node* child : children) {
         double value = child->getBestValue() / std::max(1, child->getVisitCount());
         if (value < bestValue) {
             bestValue = value;
@@ -62,13 +62,13 @@ HeuristicSearch::HeuristicSearch(mlir::MLIRContext *context, std::string functio
     : context(context), functionName(functionName), explorationFactor(explorationFactor) {}
 
 // Select method - selects the best node to expand using a heuristic (e.g., exploration vs exploitation)
-HeuristicNode* HeuristicSearch::select(HeuristicNode* node) {
-    HeuristicNode* selectedNode = node;
+Node* HeuristicSearch::select(Node* node) {
+    Node* selectedNode = node;
     while (selectedNode->getIsFullyExpanded() && selectedNode->getChildrenNodes().size() > 0) {
         double bestValue = std::numeric_limits<double>::infinity();
-        HeuristicNode* bestNode = nullptr;
+        Node* bestNode = nullptr;
 
-        for (HeuristicNode* child : selectedNode->getChildrenNodes()) {
+        for (Node* child : selectedNode->getChildrenNodes()) {
             double exploitation = child->getBestValue() / std::max(1, child->getVisitCount());
             double exploration = explorationFactor * std::sqrt(std::log(selectedNode->getVisitCount()) / std::max(1, child->getVisitCount()));
             double heuristicValue = exploitation - exploration;
@@ -86,10 +86,10 @@ HeuristicNode* HeuristicSearch::select(HeuristicNode* node) {
     return selectedNode;
 }
 
-std::vector<HeuristicNode*> HeuristicSearch::expand(Node* node, int level, int stage,
+std::vector<Node*> HeuristicSearch::expand(Node* node, int level, int stage,
     std::unordered_map<std::string, std::pair<mlir::linalg::LinalgOp, LinalgMappingClassification>> LinalgOpStages) {
 
-    std::vector<HeuristicNode*> children;
+    std::vector<Node*> children;
     SmallVector<Node*, 2> candidates;
     SmallVector<Node*, 2> sampled_candidates;
     
@@ -119,14 +119,14 @@ std::vector<HeuristicNode*> HeuristicSearch::expand(Node* node, int level, int s
             candidates = sampled_candidates;
         }
 
-        // Create HeuristicNode children from candidates
+        // Create Node children from candidates
         int index = 0;
         for (Node* candidate : candidates) {
             CodeIR* codeir = candidate->getTransformedCodeIr();
             std::vector<Transformation*> transformationList = candidate->getTransformationList();
             Transformation* transformationApplied = candidate->getTransformation();
 
-            HeuristicNode* child = new HeuristicNode(node, level + 1, index);
+            Node* child = new Node(node, level + 1, index);
             children.push_back(child);
             node->addChild(child);
             index++;
@@ -143,14 +143,14 @@ std::vector<HeuristicNode*> HeuristicSearch::expand(Node* node, int level, int s
 
 
 // Evaluate method - evaluate the heuristic value of the node (e.g., execution time, memory usage)
-double HeuristicSearch::evaluate(HeuristicNode* node) {
+double HeuristicSearch::evaluate(Node* node) {
     // Simulate evaluation with a heuristic function (adjust this)
     // For example, using execution time, code size, etc.:
     return std::stod(node->getEvaluation());
 }
 
 // Backpropagate method - propagate the result up the tree
-void HeuristicSearch::backpropagate(HeuristicNode* node, double result) {
+void HeuristicSearch::backpropagate(Node* node, double result) {
     while (node != nullptr) {
         node->incrementVisitCount();
         node->setBestValue(node->getBestValue() + result);
@@ -159,18 +159,15 @@ void HeuristicSearch::backpropagate(HeuristicNode* node, double result) {
 }
 
 // Run search method - main search loop that iterates over a number of iterations
-HeuristicNode* HeuristicSearch::runSearchMethod(HeuristicNode* root, 
+Node* HeuristicSearch::runSearchMethod(Node* root, 
     std::unordered_map<std::string, std::pair<mlir::linalg::LinalgOp, std::string>> LinalgOpStages, 
-    //! if the above didnt work, try this:
-    // std::unordered_map<std::string, std::pair<mlir::linalg::LinalgOp, LinalgMappingClassification>> LinalgOpStages, 
-
     int iterations) {
 
     std::random_device rd;
     std::mt19937 gen(rd());
 
-    HeuristicNode* selectedNode;
-    std::vector<HeuristicNode*> children;
+    Node* selectedNode;
+    std::vector<Node*> children;
 
     for (int i = 0; i < iterations; i++) {
         std::cerr << "Iteration: " << i << std::endl;
@@ -196,7 +193,7 @@ HeuristicNode* HeuristicSearch::runSearchMethod(HeuristicNode* root,
     }
 
     // Find the best result from the search
-    HeuristicNode* result = root;
+    Node* result = root;
     selectedNode = root;
     while (!selectedNode->getChildrenNodes().empty()) {
         selectedNode = selectedNode->bestChild();
