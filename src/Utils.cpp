@@ -462,6 +462,20 @@ mlir::LogicalResult TagSCFForAll(mlir::Operation *Target, std::string tag)
       Target, transformEntryPoint, *moduleFromFile,
       options1.enableExpensiveChecks(false));
 }
+
+mlir::LogicalResult TagSCFParallel(mlir::Operation *Target, std::string tag)
+{
+  std::string transformDialectString = "module attributes {transform.with_named_sequence} { \n transform.named_sequence @__transform_main(%variant_op: !transform.any_op {transform.readonly})  { \n  %1 = transform.structured.match ops{[\"scf.parallel\"]}  in %variant_op : (!transform.any_op) -> !transform.any_op transform.annotate %1 \"" + tag + "\" : !transform.any_op transform.yield}}";
+  mlir::transform::TransformOptions options1;
+  mlir::OwningOpRef<mlir::ModuleOp> moduleFromFile = mlir::parseSourceString<mlir::ModuleOp>(transformDialectString, Target->getContext());
+  llvm::StringRef entryPoint = "__transform_main";
+  mlir::Operation *transformEntryPoint = mlir::transform::detail::findTransformEntryPoint(Target, *moduleFromFile, entryPoint);
+
+  return mlir::transform::applyTransformNamedSequence(
+      Target, transformEntryPoint, *moduleFromFile,
+      options1.enableExpensiveChecks(false));
+}
+
 mlir::LogicalResult TagOperation(mlir::Operation *Target, std::string tag)
 {
   std::string transformDialectString = "module attributes {transform.with_named_sequence} { \n transform.named_sequence @__transform_main(%variant_op: !transform.any_op {transform.readonly})  { \n  %1 = transform.structured.match interface{LinalgOp}  in %variant_op : (!transform.any_op) -> !transform.any_op transform.annotate %1 \"" + tag + "\" : !transform.any_op transform.yield}}";

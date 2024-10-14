@@ -73,6 +73,7 @@ std::string function_wrapper(const std::string &operation, const std::string &ma
 llvm::SmallVector<mlir::OpFoldResult> getMixedSizes(llvm::ArrayRef<int64_t> tileSizes, mlir::MLIRContext *context);
 
 mlir::LogicalResult TagSCFForAll(mlir::Operation *Target, std::string tag);
+mlir::LogicalResult TagSCFParallel(mlir::Operation *Target, std::string tag);
 mlir::LogicalResult TagOperation(mlir::Operation *Target, std::string tag);
 
 // Function to classify the mapping type of a linalg operation

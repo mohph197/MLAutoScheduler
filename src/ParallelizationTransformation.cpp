@@ -481,16 +481,20 @@ SmallVector<Node *, 2> Parallelization::createParallelizationCandidates(Node *no
       if (!failed(tilingResult))
         rewriter.replaceOp(ClonedTileableOp, tilingResult->tileOp->getResults());
 
+      Operation *afterOp;
+      std::string consumerTag = "consumer" + std::to_string(CurrentStage);
       if (scf::ForallOp parallelizableOp = dyn_cast<scf::ForallOp>(tilingResult->tileOp)) {
-        scf::forallToParallelLoop(rewriter, parallelizableOp);
+        IRRewriter rewriter1(context);
+        scf::ParallelOp parallelOp;
+        if (failed(scf::forallToParallelLoop(rewriter1, parallelizableOp, &parallelOp)))
+          std::cerr << "COULDN'T PARALLELIZE THE OPERATION" << std::endl;
+        afterOp = parallelOp;
+        TagSCFParallel(afterOp, consumerTag);
       } else {
-        std::cerr << "COULDN'T PARALLELIZE THE OPERATION" << std::endl;
+        std::cerr << "COULDN'T FIND FORALL OP TO PARALLELIZE" << std::endl;
+        afterOp = tilingResult->tileOp;
       }
 
-      // IRRewriter rewriter1(context);
-      std::string consumerTag = "consumer" + std::to_string(CurrentStage);
-
-      TagSCFForAll(tilingResult->tileOp, consumerTag);
       int nbFused = 0;
       SmallVector<mlir::Operation *, 2> producers;
 
@@ -509,10 +513,10 @@ SmallVector<Node *, 2> Parallelization::createParallelizationCandidates(Node *no
       std::copy(producers.begin(), std::next(producers.begin(), std::min((int)producers.size(), 6)), sublist.begin());*/
 
       // Getting producers
-      for (int i = 0; i < tilingResult->tileOp->getNumOperands(); i++)
+      for (int i = 0; i < afterOp->getNumOperands(); i++)
       {
        
-        Operation *producer = tilingResult->tileOp->getOperand(i).getDefiningOp();
+        Operation *producer = afterOp->getOperand(i).getDefiningOp();
         if (producer)
         {
           producers.push_back(producer);
@@ -584,7 +588,7 @@ SmallVector<Node *, 2> Parallelization::createParallelizationCandidates(Node *no
     //std::cerr << " producers size : " << producers.size() << std::endl;
 
       // FuseOps(ClonedTargetForFusion, linalgOpCurrentStageEqu, producers, consumerTag, nbFused);
-      FuseOps(ClonedTarget, tilingResult->tileOp, producers, consumerTag, nbFused);
+      FuseOps(ClonedTarget, afterOp, producers, consumerTag, nbFused);
       node->setCurrentStage(node->getCurrentStage() - 1);
       // ChildNodeForFusion->setCurrentStage(node->getCurrentStage());
       // FuseIntoContainingOperation(tilingResult->tileOp, ClonedTarget, rewriter1);
@@ -603,7 +607,6 @@ SmallVector<Node *, 2> Parallelization::createParallelizationCandidates(Node *no
     pm.addPass(mlir::bufferization::createEmptyTensorToAllocTensorPass());
 
     if (!mlir::failed(pm.run((ClonedTarget)))) int ClonedOpIndex = 0;
-
   }
 
   // std::copy(ChildNodesFused.begin(), ChildNodesFused.end(), ChildNodes.end());
