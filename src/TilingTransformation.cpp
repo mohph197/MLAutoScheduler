@@ -285,7 +285,7 @@ SmallVector<Node *, 2> Tiling::createTilingCandidates(Node *node,
             scf::tileUsingSCF(rewriter, ClonedTileableOp, tiling->getOptions());
         // FailureOr<scf::SCFTileAndFuseResult> maybeTiled =
         // mlir::scf::tileConsumerAndFuseProducerGreedilyUsingSCFForOp(rewriter,ClonedTileableOp,tiling->getOptions());
-        // node->setCurrentStage(node->getCurrentStage() - 1);
+        node->setCurrentStage(node->getCurrentStage() - 1);
         if (!failed(maybeTiled))
           rewriter.replaceOp(ClonedTileableOp, maybeTiled->loops.front()->getResults());
       //}

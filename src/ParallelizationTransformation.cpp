@@ -481,6 +481,12 @@ SmallVector<Node *, 2> Parallelization::createParallelizationCandidates(Node *no
       if (!failed(tilingResult))
         rewriter.replaceOp(ClonedTileableOp, tilingResult->tileOp->getResults());
 
+      if (scf::ForallOp parallelizableOp = dyn_cast<scf::ForallOp>(tilingResult->tileOp)) {
+        scf::forallToParallelLoop(rewriter, parallelizableOp);
+      } else {
+        std::cerr << "COULDN'T PARALLELIZE THE OPERATION" << std::endl;
+      }
+
       // IRRewriter rewriter1(context);
       std::string consumerTag = "consumer" + std::to_string(CurrentStage);
 
@@ -579,10 +585,7 @@ SmallVector<Node *, 2> Parallelization::createParallelizationCandidates(Node *no
 
       // FuseOps(ClonedTargetForFusion, linalgOpCurrentStageEqu, producers, consumerTag, nbFused);
       FuseOps(ClonedTarget, tilingResult->tileOp, producers, consumerTag, nbFused);
-
-      scf::forallToParallelLoop(rewriter, dyn_cast<scf::ForallOp>(tilingResult->tileOp));
-      
-      // node->setCurrentStage(node->getCurrentStage() - 1);
+      node->setCurrentStage(node->getCurrentStage() - 1);
       // ChildNodeForFusion->setCurrentStage(node->getCurrentStage());
       // FuseIntoContainingOperation(tilingResult->tileOp, ClonedTarget, rewriter1);
     }
