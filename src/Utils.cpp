@@ -190,7 +190,7 @@ void generateForAllOpCombinations(const llvm::SmallVector<llvm::SmallVector<int6
   if (currentLoop >= maxNumberLoops)
   {
     if (!std::all_of(currentCombination.begin(), currentCombination.end(), [](int64_t size)
-                     { return size == 1; }))
+                     { return size == 1 || size == 0; }))
     {
       combinations.push_back(currentCombination);
     }
@@ -202,7 +202,7 @@ void generateForAllOpCombinations(const llvm::SmallVector<llvm::SmallVector<int6
   for (int64_t tileSize : currentTileSizes)
   {
     // Check if the current tileSize is a multiple of the corresponding upperBound.
-    if (upperBounds[currentLoop] % tileSize == 0)
+    if (tileSize == 0 || upperBounds[currentLoop] % tileSize == 0)
     {
 
       currentCombination[currentLoop] = tileSize;

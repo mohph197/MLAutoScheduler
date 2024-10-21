@@ -363,13 +363,18 @@ SmallVector<Node *, 2> Parallelization::createParallelizationCandidates(Node *no
   {
     OpBuilder builder(context);
     SmallVector<Range> iterationDomain = tileableOp.getIterationDomain(builder);
+    SmallVector<utils::IteratorType> iteratorTypes = tileableOp.getLoopIteratorTypes();
 
     llvm::SmallVector<int64_t> upperBounds;
-    for (const auto &range : llvm::enumerate(iterationDomain))
+    for (auto [index, range, iteratorType] : llvm::enumerate(iterationDomain, iteratorTypes))
     {
+      if (iteratorType == utils::IteratorType::reduction) {
+        upperBounds.push_back(0);
+        continue;
+      }
       llvm::SmallVector<Value> dynamicVec;
       llvm::SmallVector<int64_t> staticVec;
-      dispatchIndexOpFoldResult(range.value().size,
+      dispatchIndexOpFoldResult(range.size,
                                 dynamicVec,
                                 staticVec);
       upperBounds.append(staticVec.begin(), staticVec.end());
@@ -384,6 +389,11 @@ SmallVector<Node *, 2> Parallelization::createParallelizationCandidates(Node *no
 
     for (int64_t value : upperBounds)
     {
+      if (value == 0)
+      {
+        possibleTileSizes.push_back({0});
+        continue;
+      }
       llvm::SmallVector<int64_t, 4> dividers;
       for (int64_t i = 2; i < std::min((int)value, 40); ++i)
       {
