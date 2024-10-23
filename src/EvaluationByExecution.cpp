@@ -146,9 +146,9 @@ double EvaluationByExecution::evaluateTransformation(Node *node)
 
     // pm.addPass(createTestTransformDialectEraseSchedulePass());
     pm.addPass(mlir::createLoopInvariantCodeMotionPass());
-    pm.addPass(mlir::createCSEPass());
     pm.addPass(mlir::createCanonicalizerPass());
-    pm.addPass(mlir::createCSEPass());
+    // pm.addPass(mlir::createCSEPass());
+    // pm.addPass(mlir::createCSEPass());
 
     // pm.addPass(mlir::bufferization::createEmptyTensorEliminationPass());
     // pm.addPass(mlir::bufferization::createEmptyTensorToAllocTensorPass());

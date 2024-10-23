@@ -120,12 +120,12 @@ DiagnosedSilenceableFailure FuseOps(Operation *f, Operation *containingOp, Small
   applyPassManagerCLOptions(pm);
 
   pm.addPass(mlir::createLoopInvariantCodeMotionPass());
-  pm.addPass(mlir::createCSEPass());
   pm.addPass(mlir::createCanonicalizerPass());
-  pm.addPass(mlir::createCSEPass());
+  // pm.addPass(mlir::createCSEPass());
+  // pm.addPass(mlir::createCSEPass());
 
-  pm.addPass(mlir::bufferization::createEmptyTensorEliminationPass());
-  pm.addPass(mlir::bufferization::createEmptyTensorToAllocTensorPass());
+  // pm.addPass(mlir::bufferization::createEmptyTensorEliminationPass());
+  // pm.addPass(mlir::bufferization::createEmptyTensorToAllocTensorPass());
 
   if (!mlir::failed(pm.run((f))))
     int ClonedOpIndex = 0;
@@ -609,12 +609,12 @@ SmallVector<Node *, 2> Parallelization::createParallelizationCandidates(Node *no
     applyPassManagerCLOptions(pm);
 
     pm.addPass(mlir::createLoopInvariantCodeMotionPass());
-    pm.addPass(mlir::createCSEPass());
     pm.addPass(mlir::createCanonicalizerPass());
-    pm.addPass(mlir::createCSEPass());
+    // pm.addPass(mlir::createCSEPass());
+    // pm.addPass(mlir::createCSEPass());
 
-    pm.addPass(mlir::bufferization::createEmptyTensorEliminationPass());
-    pm.addPass(mlir::bufferization::createEmptyTensorToAllocTensorPass());
+    // pm.addPass(mlir::bufferization::createEmptyTensorEliminationPass());
+    // pm.addPass(mlir::bufferization::createEmptyTensorToAllocTensorPass());
 
     if (!mlir::failed(pm.run((ClonedTarget)))) int ClonedOpIndex = 0;
   }
