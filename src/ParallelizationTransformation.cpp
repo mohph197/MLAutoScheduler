@@ -398,7 +398,7 @@ SmallVector<Node *, 2> Parallelization::createParallelizationCandidates(Node *no
       }
       llvm::SmallVector<int64_t, 4> dividers;
       dividers.push_back(1);
-      for (int64_t i = 2; i < std::min((int)value, 11); ++i)
+      for (int64_t i = 2; i <= std::min((int)value, 64); i *= 2)
       {
         if (value % i == 0)
         {

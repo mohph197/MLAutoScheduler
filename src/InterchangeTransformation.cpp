@@ -74,7 +74,7 @@ SmallVector<Node *, 2> Interchange::createInterchangeCandidates(
 
   // Check if the operation is "linalg.generic"
   // TEMP : check if the operation is not 'linalg.fill' and counter is 3, targeting only the other operations
-  if ((op->getName().getStringRef()).str() != "linalg.fill" ){
+  if ((linalgOp->getName().getStringRef()).str() != "linalg.fill" ){
 
     int64_t numLoops = linalgOp.getNumLoops();
     // SmallVector<Node* , 2> ChildNodes;
@@ -119,14 +119,14 @@ SmallVector<Node *, 2> Interchange::createInterchangeCandidates(
 
     std::unordered_map<std::string, std::pair<linalg::LinalgOp, LinalgMappingClassification>> clonedLinalgOps = getLinalgOps(ClonedTarget);
 
-    mlir::Operation *clonedLinalgOp = clonedLinalgOps["operation" + std::to_string(CurrentStage)].first;
+    linalg::LinalgOp clonedLinalgOp = clonedLinalgOps["operation" + std::to_string(CurrentStage)].first;
 
     if ((clonedLinalgOp->getName().getStringRef()).str() != "linalg.fill"  ){
         //auto start = std::chrono::high_resolution_clock::now();
         IRRewriter rewriter(context);
         rewriter.setInsertionPoint(clonedLinalgOp);
         FailureOr<linalg::GenericOp> generalizeResult =
-            generalizeNamedOp(rewriter, clonedLinalgOp);
+            linalg::generalizeNamedOp(rewriter, clonedLinalgOp);
 
         auto genericOp = *generalizeResult;
 

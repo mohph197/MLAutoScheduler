@@ -36,13 +36,13 @@ void generateForOpCombinations(const llvm::SmallVector<llvm::SmallVector<int64_t
 llvm::SmallVector<llvm::SmallVector<int64_t, 4>, 4>
 generateTileForOpCombinations(int64_t maxNumberLoops,
                               const llvm::SmallVector<mlir::Range> &iterationDomain,
-                              const SmallVector<utils::IteratorType> &iteratorTypes)
+                              const llvm::SmallVector<mlir::utils::IteratorType> &iteratorTypes)
 {
 
   llvm::SmallVector<int64_t> upperBounds;
   for (auto [index, range, iteratorType] : llvm::enumerate(iterationDomain, iteratorTypes))
   {
-    if (iteratorType == utils::IteratorType::reduction) {
+    if (iteratorType == mlir::utils::IteratorType::reduction) {
       upperBounds.push_back(0);
       continue;
     }
@@ -70,7 +70,7 @@ generateTileForOpCombinations(int64_t maxNumberLoops,
     }
     llvm::SmallVector<int64_t, 4> dividers;
     dividers.push_back(1);
-    for (int64_t i = 2; i < std::min((int)value, 11); ++i)
+    for (int64_t i = 2; i <= std::min((int)value, 64); i *= 2)
     {
       if (value % i == 0)
       {

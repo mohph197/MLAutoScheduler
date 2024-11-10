@@ -24,7 +24,7 @@
 
 class Interchange: public Transformation{
     private:
-    mlir::linalg::LinalgOp* op;
+    mlir::linalg::LinalgOp *op;
     mlir::MLIRContext *context;
     std::vector<unsigned>InterchangeVector;
 

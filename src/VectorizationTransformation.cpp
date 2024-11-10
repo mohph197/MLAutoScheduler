@@ -70,11 +70,11 @@ Node* Vectorization::createVectorizationNode(
 
   MLIRCodeIR *CodeIr = (MLIRCodeIR *)node->getTransformedCodeIr();
   MLIRCodeIR *ClonedCode = (MLIRCodeIR *)CodeIr->cloneIr();
-  Operation *ClonedTarget = (Operation *)ClonedCode->getIr();
+  mlir::Operation *ClonedTarget = (mlir::Operation *)ClonedCode->getIr();
   Node *VectNode = new Node(ClonedCode, node->getCurrentStage());
 
-  linalgOps = getLinalgOps(ClonedTarget);
-  linalg::LinalgOp linalgOp = linalgOps["operation" + std::to_string(operationStage)].first
+  std::unordered_map<std::string, std::pair<linalg::LinalgOp, LinalgMappingClassification>> linalgOps = getLinalgOps(ClonedTarget);
+  linalg::LinalgOp linalgOp = linalgOps["operation" + std::to_string(operationStage)].first;
 
   std::vector<Transformation *> TransList = node->getTransformationList();
   VectNode->setTransformationList(TransList);
@@ -85,7 +85,7 @@ Node* Vectorization::createVectorizationNode(
 
   bool ToDecompose = false;
 
-  if (mlir::TilingInterface ClonedTileableOp = dyn_cast<mlir::TilingInterface>(linalgOp))
+  if (mlir::TilingInterface ClonedTileableOp = dyn_cast<mlir::TilingInterface>((mlir::Operation *) linalgOp))
   {
     //if ((op->getName().getStringRef()).str() == "linalg.pooling_nchw_max" || (op->getName().getStringRef()).str() == "linalg.conv_2d_nchw_fchw")
     if ((linalgOp->getName().getStringRef()).str() == "linalg.pooling_nchw_max"
@@ -123,7 +123,7 @@ Node* Vectorization::createVectorizationNode(
 
       SmallVector<OpFoldResult> mixedSizes = getMixedSizes(tilingSizes, context);
       options.setTileSizes(mixedSizes);
-      std::cerr << "Modified tilingSizes " << (op->getName().getStringRef()).str() << " : [";
+      std::cerr << "Modified tilingSizes " << (linalgOp->getName().getStringRef()).str() << " : [";
       for (size_t i = 0; i < tilingSizes.size(); ++i)
       {
         std::cerr << tilingSizes[i];
@@ -181,7 +181,7 @@ Node* Vectorization::createVectorizationNode(
   // mlir::transform::detail::VectorizeOpGenericAdaptorBase::Properties props;
 
   // if (!props.getDisableTransferPermutationMapLoweringPatterns())
-  mlir::vector::populateVectorTransferPermutationMapLoweringPatterns(patterns);
+  vector::populateVectorTransferPermutationMapLoweringPatterns(patterns);
 
   // if (!props.getDisableMultiReductionToContractPatterns())
   vector::populateVectorReductionToContractPatterns(patterns);

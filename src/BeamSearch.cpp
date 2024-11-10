@@ -21,7 +21,7 @@ Node *BeamSearch::runSearchMethod(Node *root)
 {
     // Clone the root's MLIR code for evaluation
     MLIRCodeIR *CodeIr = (MLIRCodeIR *)root->getTransformedCodeIr();
-    Operation *Target = (Operation *)CodeIr->getIr();
+    mlir::Operation *Target = (mlir::Operation *)CodeIr->getIr();
 
     std::unordered_map<std::string, std::pair<mlir::linalg::LinalgOp, LinalgMappingClassification>> linalgOps = getLinalgOps(Target);
     std::cerr << "##### Linalg Ops Size = " << linalgOps.size() << " #####\n";
@@ -61,13 +61,15 @@ Node *BeamSearch::runSearchMethod(Node *root)
 
                 // Generate transformation candidates based on the current level.
                 SmallVector<Node *, 2> candidates;
+                SmallVector<Node *, 2> PCandidates;
+                SmallVector<Node *, 2> TCandidates;
                 switch (level)
                 {
                 case 0:
                     // candidates = Parallelization::createParallelizationCandidates(node, this->context, currentOp, linalgOps);
                     // candidates = Tiling::createTilingCandidates(node, this->context, currentOp, linalgOps);
-                    SmallVector<Node *, 2> PCandidates = Parallelization::createParallelizationCandidates(node, this->context, currentOp, linalgOps);
-                    SmallVector<Node *, 2> TCandidates = Tiling::createTilingCandidates(node, this->context, currentOp, linalgOps);
+                    PCandidates = Parallelization::createParallelizationCandidates(node, this->context, currentOp, linalgOps);
+                    TCandidates = Tiling::createTilingCandidates(node, this->context, currentOp, linalgOps);
                     candidates.insert(candidates.end(), PCandidates.begin(), PCandidates.end());
                     candidates.insert(candidates.end(), TCandidates.begin(), TCandidates.end());
                     break;
@@ -92,7 +94,8 @@ Node *BeamSearch::runSearchMethod(Node *root)
                 MLIRCodeIR *ToCloneCodeIr = (MLIRCodeIR *)node->getTransformedCodeIr();
                 MLIRCodeIR *ClonedCode = (MLIRCodeIR *)ToCloneCodeIr->cloneIr();
                 Node *ClonedNode = new Node(ClonedCode, node->getCurrentStage());
-                ClonedNode->setTransformationList(node->getTransformationList());
+                std::vector<Transformation *> TransList = node->getTransformationList();
+                ClonedNode->setTransformationList(TransList);
                 ClonedNode->setEvaluation(node->getEvaluation());
 
                 candidates.insert(candidates.begin(), ClonedNode);

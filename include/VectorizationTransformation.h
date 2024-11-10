@@ -21,6 +21,8 @@
 #include "TransformInterpreterPassBase.h"
 #include "Utils.h"
 
+#include "mlir/Dialect/Vector/Transforms/LoweringPatterns.h"
+
 #include <iostream>
 #include <random>
 
