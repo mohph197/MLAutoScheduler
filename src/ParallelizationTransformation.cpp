@@ -127,8 +127,10 @@ DiagnosedSilenceableFailure FuseOps(Operation *f, Operation *containingOp, Small
   // pm.addPass(mlir::bufferization::createEmptyTensorEliminationPass());
   // pm.addPass(mlir::bufferization::createEmptyTensorToAllocTensorPass());
 
-  if (!mlir::failed(pm.run((f))))
-    int ClonedOpIndex = 0;
+  if (mlir::failed(pm.run((f)))) {
+    std::cerr << "FAILED PASSES AFTER FUSION" << std::endl;
+  }
+
   /*SmallVector<mlir::Operation *, 2> NewProducers;
   f->walk([&](mlir::Operation *op)
           {
@@ -395,15 +397,13 @@ SmallVector<Node *, 2> Parallelization::createParallelizationCandidates(Node *no
         continue;
       }
       llvm::SmallVector<int64_t, 4> dividers;
-      for (int64_t i = 2; i < std::min((int)value, 40); ++i)
+      dividers.push_back(1);
+      for (int64_t i = 2; i < std::min((int)value, 11); ++i)
       {
         if (value % i == 0)
         {
           dividers.push_back(i);
         }
-      }
-      if (dividers.size() == 0){
-        dividers.push_back(1);
       }
       possibleTileSizes.push_back(dividers);
     }
@@ -456,9 +456,7 @@ SmallVector<Node *, 2> Parallelization::createParallelizationCandidates(Node *no
     }
     // ChildNodesList.push_back(ChildNodes);
   } //} });
-  int OpIndex = 0;
-  // for (auto ChildNodes : ChildNodesList)
-  //{
+
   for (auto node : ChildNodes)
   {
     Operation *ClonedTarget = ((Operation *)(*((MLIRCodeIR *)node->getTransformedCodeIr()))
@@ -525,7 +523,6 @@ SmallVector<Node *, 2> Parallelization::createParallelizationCandidates(Node *no
       // Getting producers
       for (int i = 0; i < afterOp->getNumOperands(); i++)
       {
-       
         Operation *producer = afterOp->getOperand(i).getDefiningOp();
         if (producer)
         {
@@ -550,16 +547,8 @@ SmallVector<Node *, 2> Parallelization::createParallelizationCandidates(Node *no
         }
       }
 
-      MLIRCodeIR *ClonedCodeForFusion = (MLIRCodeIR *)((MLIRCodeIR *)node->getTransformedCodeIr())->cloneIr();
-
-      Node *ChildNodeForFusion = new Node(ClonedCodeForFusion, node->getCurrentStage());
-
-      std::vector<Transformation *> TransList = node->getTransformationList();
-      ChildNodeForFusion->setTransformationList(TransList);
-      Operation *ClonedTargetForFusion = ((Operation *)(*((MLIRCodeIR *)ChildNodeForFusion->getTransformedCodeIr()))
-                                              .getIr());
-
-      ChildNodesFused.push_back(ChildNodeForFusion);
+      FuseOps(ClonedTarget, afterOp, producers, consumerTag, nbFused);
+      node->setCurrentStage(node->getCurrentStage() - 1);
 
       /*std::unordered_map<std::string, std::pair<mlir::linalg::LinalgOp, LinalgMappingClassification>> linalgOpsFused = getLinalgOps(ClonedTargetForFusion);
       mlir::Operation *linalgOpCurrentStageEqu = linalgOpsFused["operation" + std::to_string(CurrentStage)].first;
@@ -598,8 +587,6 @@ SmallVector<Node *, 2> Parallelization::createParallelizationCandidates(Node *no
     //std::cerr << " producers size : " << producers.size() << std::endl;
 
       // FuseOps(ClonedTargetForFusion, linalgOpCurrentStageEqu, producers, consumerTag, nbFused);
-      FuseOps(ClonedTarget, afterOp, producers, consumerTag, nbFused);
-      node->setCurrentStage(node->getCurrentStage() - 1);
       // ChildNodeForFusion->setCurrentStage(node->getCurrentStage());
       // FuseIntoContainingOperation(tilingResult->tileOp, ClonedTarget, rewriter1);
     }
@@ -616,7 +603,9 @@ SmallVector<Node *, 2> Parallelization::createParallelizationCandidates(Node *no
     // pm.addPass(mlir::bufferization::createEmptyTensorEliminationPass());
     // pm.addPass(mlir::bufferization::createEmptyTensorToAllocTensorPass());
 
-    if (!mlir::failed(pm.run((ClonedTarget)))) int ClonedOpIndex = 0;
+    if (mlir::failed(pm.run((ClonedTarget)))) {
+      std::cerr << "FAILED PASSES AFTER TILING" << std::endl;
+    }
   }
 
   // std::copy(ChildNodesFused.begin(), ChildNodesFused.end(), ChildNodes.end());

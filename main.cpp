@@ -238,12 +238,13 @@ int main(int argc, char **argv)
   // Create a root Node for transformations
   Node *root = new Node(&codeIr, 0);
   // Initialize an evaluator for transformation evaluations
-  EvaluationByExecution evaluator = EvaluationByExecution(functionName);
 
   /*double RootEvel = evaluator.evaluateTransformation(root);
   root->setEvaluation(RootEvel);
   BeamSearch* searcher = new BeamSearch(3, &context, functionName);
   Node * res = searcher->runSearchMethod(root);*/
+
+  EvaluationByExecution evaluator = EvaluationByExecution(functionName, "_exhaustive_gen.txt");
 
   // Store all the linalg operations found in the module
   std::unordered_map<std::string, std::pair<mlir::linalg::LinalgOp, LinalgMappingClassification>> linalgOps = getLinalgOps(module1.get());

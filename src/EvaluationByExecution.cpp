@@ -21,10 +21,11 @@ pid_t popen22(const char *command, int *infp, int *outfp);
 EvaluationByExecution::EvaluationByExecution()
 {
 }
-EvaluationByExecution::EvaluationByExecution(std::string functionName)
+EvaluationByExecution::EvaluationByExecution(std::string functionName, std::string suffix)
 {
     this->functionName = functionName;
-    this->LogsFileName = "log/" + functionName + "_exhaustive_gen.txt";
+    // this->LogsFileName = "log/" + functionName + "_exhaustive_gen.txt";
+    this->LogsFileName = "log/" + functionName + suffix;
 }
 double EvaluationByExecution::evaluateTransformation(Node *node)
 {

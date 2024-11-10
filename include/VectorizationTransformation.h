@@ -42,7 +42,7 @@ class Vectorization: public Transformation{
         std::string getType() override;
         /// Creates a list of tiling transformation candidates for the given CodeIR object.
         /// Overrides the createCandidates() method from the base class Transformation.
-        static SmallVector<Node* , 2>  createVectorizationCandidates(Node *node, mlir::MLIRContext *context);
+        static Node* createVectorizationNode(Node *node, int operationStage, mlir::MLIRContext *context);
 
 };
 

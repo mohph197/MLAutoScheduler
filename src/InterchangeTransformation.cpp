@@ -57,8 +57,10 @@ std::vector<unsigned> Interchange::getInterchangeVector()
 
 SmallVector<Node *, 2> Interchange::createInterchangeCandidates(
     Node *node,
-    mlir::MLIRContext *context)
-{
+    mlir::MLIRContext *context,
+    int CurrentStage,
+    std::unordered_map<std::string, std::pair<linalg::LinalgOp, LinalgMappingClassification>> LinalgOpStages
+) {
   // Initialize a list to store ChildNodes
   // SmallVector<SmallVector<Node *, 2>> ChildNodesList;
   SmallVector<Node* , 2> ChildNodes;
@@ -67,93 +69,78 @@ SmallVector<Node *, 2> Interchange::createInterchangeCandidates(
   MLIRCodeIR *CodeIr = (MLIRCodeIR *)node->getTransformedCodeIr();
   Operation *target = ((Operation *)(*CodeIr)
                            .getIr());
-  int counter = 0;
 
-  // Traverse the operations in the target operation's hierarchy
-  target->walk([&](Operation *op)
-               {
-    // Check if the operation is "linalg.generic"
-    if (auto InterchangeableOp = dyn_cast<linalg::LinalgOp>(op)) {
+  linalg::LinalgOp linalgOp = LinalgOpStages["operation" + std::to_string(CurrentStage)].first;
 
-      // TEMP : check if the operation is not 'linalg.fill' and counter is 3, targeting only the other operations 
-      if ((op->getName().getStringRef()).str() != "linalg.fill" ){
+  // Check if the operation is "linalg.generic"
+  // TEMP : check if the operation is not 'linalg.fill' and counter is 3, targeting only the other operations
+  if ((op->getName().getStringRef()).str() != "linalg.fill" ){
 
-        int64_t numLoops = InterchangeableOp.getNumLoops();
-        // SmallVector<Node* , 2> ChildNodes;
+    int64_t numLoops = linalgOp.getNumLoops();
+    // SmallVector<Node* , 2> ChildNodes;
 
-        // Create a list of candidate values for interchange, with different parameters
-        std::vector<std::vector<unsigned>> values = 
-                generateCandidates(numLoops, 5);
-                
-        for (const auto& candidate : values){
+    // Create a list of candidate values for interchange, with different parameters
+    std::vector<std::vector<unsigned>> values =
+            generateCandidates(numLoops, 5);
 
-          // Clone the code, create a new node, and set its transformation list
-          MLIRCodeIR* ClonedCode =  (MLIRCodeIR*)CodeIr->cloneIr();
-          Node* ChildNode = new Node (ClonedCode, node->getCurrentStage());        
+    for (const auto& candidate : values){
+      // Clone the code, create a new node, and set its transformation list
+      MLIRCodeIR* ClonedCode =  (MLIRCodeIR*)CodeIr->cloneIr();
+      Node* ChildNode = new Node (ClonedCode, node->getCurrentStage());
 
-          std::vector<Transformation*> TransList= node->getTransformationList();
-          ChildNode->setTransformationList(TransList);
+      std::vector<Transformation*> TransList= node->getTransformationList();
+      ChildNode->setTransformationList(TransList);
 
-          // Create an interchange transformation and add it to the child node
-          Interchange *interchange = 
-            new Interchange(&InterchangeableOp,
-                            candidate, 
-                            context);
+      // Create an interchange transformation and add it to the child node
+      Interchange *interchange =
+        new Interchange(&linalgOp,
+                        candidate,
+                        context);
 
-          ChildNode->setTransformation(interchange);
-          ChildNode->addTransformation(interchange);
+      ChildNode->setTransformation(interchange);
+      ChildNode->addTransformation(interchange);
 
-          // Add the child node to the list of child nodes
-          ChildNodes.push_back(ChildNode);
-        }
-        // Add the list of child nodes to ChildNodesList
-        // ChildNodesList.push_back(ChildNodes);
-      } 
-      counter++; 
-    } });
-  int OpIndex = 0;
-  // for (auto ChildNodes : ChildNodesList)
-  // {
-    for (auto node : ChildNodes)
-    {
-      // Get the target operation from the child node's transformed code
-      Operation *ClonedTarget = ((Operation *)(*((MLIRCodeIR *)node->getTransformedCodeIr()))
-                                     .getIr());
-      Interchange *inter = (Interchange *)node->getTransformation();
-
-      std::vector<unsigned> candidate = inter->getInterchangeVector();
-      ArrayRef<unsigned> interchangeVector(candidate);
-      int ClonedOpIndex = 0;
-
-      // Walk through operations in the cloned target operation
-      ClonedTarget->walk([&](Operation *op)
-                         {
-        if (linalg::LinalgOp ClonedInterchangeableOp = 
-                  dyn_cast<linalg::LinalgOp>(op)) {
-             // TEMP: Check if the operation is not 'linalg.fill' and ClonedOpIndex is 3 
-            if ((op->getName().getStringRef()).str() != "linalg.fill"  ){
-                //auto start = std::chrono::high_resolution_clock::now();
-                IRRewriter rewriter(context);
-                rewriter.setInsertionPoint(ClonedInterchangeableOp);
-                FailureOr<linalg::GenericOp> generalizeResult =
-                    generalizeNamedOp(rewriter, ClonedInterchangeableOp);
-                
-                auto genericOp = *generalizeResult;
-
-                // Perform interchange on the cloned operation
-                FailureOr<linalg::GenericOp> interOp = 
-                    linalg::interchangeGenericOp(rewriter,
-                                                genericOp, 
-                                                interchangeVector);
-                /*auto end = std::chrono::high_resolution_clock::now();
-                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-                std::cout << "Time taken by Interchange: " << duration.count() << " microseconds" << std::endl;*/
-               
-            }
-          ClonedOpIndex++;
-          } });
+      // Add the child node to the list of child nodes
+      ChildNodes.push_back(ChildNode);
     }
-    OpIndex++;
+    // Add the list of child nodes to ChildNodesList
+    // ChildNodesList.push_back(ChildNodes);
+  }
+
+  for (auto node : ChildNodes)
+  {
+    // Get the target operation from the child node's transformed code
+    Operation *ClonedTarget = ((Operation *)(*((MLIRCodeIR *)node->getTransformedCodeIr()))
+                                    .getIr());
+    Interchange *inter = (Interchange *)node->getTransformation();
+
+    std::vector<unsigned> candidate = inter->getInterchangeVector();
+    ArrayRef<unsigned> interchangeVector(candidate);
+
+    std::unordered_map<std::string, std::pair<linalg::LinalgOp, LinalgMappingClassification>> clonedLinalgOps = getLinalgOps(ClonedTarget);
+
+    mlir::Operation *clonedLinalgOp = clonedLinalgOps["operation" + std::to_string(CurrentStage)].first;
+
+    if ((clonedLinalgOp->getName().getStringRef()).str() != "linalg.fill"  ){
+        //auto start = std::chrono::high_resolution_clock::now();
+        IRRewriter rewriter(context);
+        rewriter.setInsertionPoint(clonedLinalgOp);
+        FailureOr<linalg::GenericOp> generalizeResult =
+            generalizeNamedOp(rewriter, clonedLinalgOp);
+
+        auto genericOp = *generalizeResult;
+
+        // Perform interchange on the cloned operation
+        FailureOr<linalg::GenericOp> interOp =
+            linalg::interchangeGenericOp(rewriter,
+                                        genericOp,
+                                        interchangeVector);
+        /*auto end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+        std::cout << "Time taken by Interchange: " << duration.count() << " microseconds" << std::endl;*/
+
+    }
+  }
   // }
   // Merge the child nodes into a single list and return it
   /*SmallVector<Node *, 2> ResChildNodes;

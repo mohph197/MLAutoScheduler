@@ -45,7 +45,8 @@ void generateCombinations(const llvm::SmallVector<llvm::SmallVector<int64_t, 4>,
 
 llvm::SmallVector<llvm::SmallVector<int64_t, 4>, 4>
 generateTileForOpCombinations(int64_t maxNumberLoops,
-                              const llvm::SmallVector<mlir::Range> &iterationDomain);
+                              const llvm::SmallVector<mlir::Range> &iterationDomain,
+                              const SmallVector<utils::IteratorType> &iteratorTypes);
 
 void generateCombinationsForDecompostion(const llvm::SmallVector<llvm::SmallVector<int64_t, 4>, 4> &tileSizes,
                                          int64_t maxNumberLoops,

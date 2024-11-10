@@ -49,7 +49,7 @@ class EvaluationByExecution {
         std::string LogsFileName;
 
         EvaluationByExecution();
-        EvaluationByExecution(std::string functionName);
+        EvaluationByExecution(std::string functionName, std::string suffix="");
         /// Evaluates the transformation by executing it with the given parameters.
         /// Parameters:
         /// - registry: A reference to the DialectRegistry used for execution.

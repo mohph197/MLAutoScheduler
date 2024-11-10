@@ -178,7 +178,7 @@ SmallVector<Node *, 2> Tiling::createTilingCandidates(Node *node,
     /*for (int NumberLoops = 2; NumberLoops <= iterationDomain.size(); ++NumberLoops)
     {*/
     SmallVector<SmallVector<int64_t, 4>, 4> newCombinations =
-        generateTileForOpCombinations(/*NumberLoops*/ iterationDomain.size(), iterationDomain);
+        generateTileForOpCombinations(/*NumberLoops*/ iterationDomain.size(), iterationDomain, loops);
     tileCombinations.insert(tileCombinations.end(), newCombinations.begin(), newCombinations.end());
     //}
 
@@ -190,7 +190,8 @@ SmallVector<Node *, 2> Tiling::createTilingCandidates(Node *node,
       tileCombinations.end(),
       std::back_inserter(SelectedTileCombinations),
       1,
-      std::mt19937{std::random_device{}()});
+      std::mt19937{std::random_device{}()}
+    );
     for (const auto &candidate : SelectedTileCombinations)
     {
       for (const auto &interchange : values)

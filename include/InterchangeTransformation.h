@@ -44,7 +44,12 @@ class Interchange: public Transformation{
 
         /// Creates a list of tiling transformation candidates for the given CodeIR object.
         /// Overrides the createCandidates() method from the base class Transformation.
-        static SmallVector<Node* , 2>  createInterchangeCandidates(Node* node, mlir::MLIRContext *context);
+        static SmallVector<Node* , 2>  createInterchangeCandidates(
+            Node* node,
+            mlir::MLIRContext *context,
+            int CurrentStage,
+            std::unordered_map<std::string, std::pair<mlir::linalg::LinalgOp, LinalgMappingClassification>> LinalgOpStages
+        );
 };
 
 #endif // MLSCEDULER_INTERCHANGE_TRANSFORMATION_H_

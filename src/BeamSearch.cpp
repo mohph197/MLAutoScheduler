@@ -19,112 +19,129 @@ BeamSearch::BeamSearch(int beamSize, mlir::MLIRContext *context, std::string fun
 
 Node *BeamSearch::runSearchMethod(Node *root)
 {
-
-    // Initialize the exploration queue and level counter
-    std::queue<Node *> exploration_queue;
-    exploration_queue.push(root);
-    int level = 0;
-
     // Clone the root's MLIR code for evaluation
     MLIRCodeIR *CodeIr = (MLIRCodeIR *)root->getTransformedCodeIr();
-    MLIRCodeIR *ClonedCode = (MLIRCodeIR *)CodeIr->cloneIr();
-    Node *clone = new Node(ClonedCode, root->getCurrentStage());
-    Node *BestNode = clone;
+    Operation *Target = (Operation *)CodeIr->getIr();
+
+    std::unordered_map<std::string, std::pair<mlir::linalg::LinalgOp, LinalgMappingClassification>> linalgOps = getLinalgOps(Target);
+    std::cerr << "##### Linalg Ops Size = " << linalgOps.size() << " #####\n";
 
     // Create an evaluator for transformation evaluations
-    EvaluationByExecution evaluator = EvaluationByExecution(this->functionName + "_logs_best_beam_search_now.txt");
+    EvaluationByExecution evaluator = EvaluationByExecution(this->functionName, "_beam_search_gen.txt");
+    double rootEval = evaluator.evaluateTransformation(root);
+    root->setEvaluation(rootEval);
+    Node *BestNode = root;
+    int currentOp = linalgOps.size() - 1;
+    BestNode->setCurrentStage(currentOp);
 
-    while (!exploration_queue.empty() && level != 3)
+    while (currentOp >= 0)
     {
-        std::cout << "################# Level = " << level << " ###############\n";
-        // SmallVector<Node *,2> parent_nodes;
+        std::cerr << "################# Current Op = " << currentOp << " ###############\n";
 
-        // Create a list to store schedule nodes at the current level
-        SmallVector<Node *, 2> level_schedules;
+        // Initialize the exploration queue and level counter
+        std::queue<Node *> exploration_queue;
+        exploration_queue.push(BestNode);
+        int level = 0;
 
-        // Iterate through nodes in the exploration queue at the current level
-        while (!exploration_queue.empty())
+        while (!exploration_queue.empty() && level < 3)
         {
+            std::cerr << "################# Level = " << level << " ###############\n";
 
-            Node *node = exploration_queue.front();
+            // Create a list to store schedule nodes at the current level
+            SmallVector<Node *, 2> level_schedules;
 
-            exploration_queue.pop();
-            SmallVector<Node *, 2> candidates;
-
-            // Generate transformation candidates based on the current level.
-            switch (level)
+            // Iterate through nodes in the exploration queue at the current level
+            while (!exploration_queue.empty())
             {
-            case 0:
-                //candidates = Parallelization::createParallelizationCandidates(node, this->context);
-                break;
-            case 1:
-            {
-                //candidates = Tiling::createTilingCandidates(node, this->context);
+                Node *node = exploration_queue.front();
+                exploration_queue.pop();
+
+                mlir::Operation *currentTarget = (mlir::Operation *)((MLIRCodeIR *)node->getTransformedCodeIr())->getIr();
+                linalgOps = getLinalgOps(currentTarget);
+
+                // Generate transformation candidates based on the current level.
+                SmallVector<Node *, 2> candidates;
+                switch (level)
+                {
+                case 0:
+                    // candidates = Parallelization::createParallelizationCandidates(node, this->context, currentOp, linalgOps);
+                    // candidates = Tiling::createTilingCandidates(node, this->context, currentOp, linalgOps);
+                    SmallVector<Node *, 2> PCandidates = Parallelization::createParallelizationCandidates(node, this->context, currentOp, linalgOps);
+                    SmallVector<Node *, 2> TCandidates = Tiling::createTilingCandidates(node, this->context, currentOp, linalgOps);
+                    candidates.insert(candidates.end(), PCandidates.begin(), PCandidates.end());
+                    candidates.insert(candidates.end(), TCandidates.begin(), TCandidates.end());
+                    break;
+                case 1:
+                    candidates = Interchange::createInterchangeCandidates(node, this->context, currentOp, linalgOps);
+                    break;
+                case 2:
+                    Node *vectNode = Vectorization::createVectorizationNode(node, currentOp, this->context);
+                    candidates.push_back(vectNode);
+                    break;
+                }
+
+                // Evaluate each transformation candidate and store their evaluation results
+                for (auto ChildNode : candidates)
+                {
+                    ChildNode->setCurrentStage(currentOp);
+                    double childEval = evaluator.evaluateTransformation(ChildNode);
+                    ChildNode->setEvaluation(childEval);
+                }
 
                 // Insert the parent node as a candidate
-                /*MLIRCodeIR *ToCloneCodeIr = (MLIRCodeIR *)node->getTransformedCodeIr();
+                MLIRCodeIR *ToCloneCodeIr = (MLIRCodeIR *)node->getTransformedCodeIr();
                 MLIRCodeIR *ClonedCode = (MLIRCodeIR *)ToCloneCodeIr->cloneIr();
-                Node *ClonedNode = new Node(ClonedCode);
+                Node *ClonedNode = new Node(ClonedCode, node->getCurrentStage());
+                ClonedNode->setTransformationList(node->getTransformationList());
+                ClonedNode->setEvaluation(node->getEvaluation());
 
-                std::vector<Transformation *> TransList = node->getTransformationList();
-                ClonedNode->setTransformationList(TransList);
-
-                candidates.insert(candidates.begin(), ClonedNode);*/
+                candidates.insert(candidates.begin(), ClonedNode);
 
                 // parent_nodes.insert(parent_nodes.begin(),ClonedNode );
-                break;
+
+                // Sort the candidates based on their evaluation scores
+                std::sort(candidates.begin(), candidates.end(), [](Node *a, Node *b)
+                        { return a->getEvaluation() < b->getEvaluation(); });
+
+                // Set the children nodes of the current node (for printing the tree)
+                node->setChildrenNodes(candidates);
+
+                level_schedules.insert(level_schedules.end(), candidates.begin(), candidates.end());
             }
 
-            /*case 2:
-                candidates = Interchange::createInterchangeCandidates(node, this->context);
-                break;*/
-            case 2:
-                candidates = Vectorization::createVectorizationCandidates(node, this->context);
-                break;
-            }
-            // Evaluate each transformation candidate and store their evaluation results
-            for (auto ChildNode : candidates)
+            // Sort the level's schedule nodes from smallest to largest evaluation
+            std::sort(level_schedules.begin(), level_schedules.end(), [](Node *a, Node *b) {
+                return a->getEvaluation() < b->getEvaluation();
+            });
+
+            /* // Forcing beam search to take one of the parent nodes in the next level
+            std::sort(parent_nodes.begin(), parent_nodes.end(), [](Node *a, Node *b) {
+                return std::stod(a->getEvaluation()) < std::stod(b->getEvaluation());
+            });
+            parent_nodes.resize(std::min(1, (int)parent_nodes.size()));
+            level_schedules.insert(level_schedules.begin(), parent_nodes.begin(), parent_nodes.end());*/
+
+            // Add the top 'beam_size' children to the exploration queue for the next level
+            for (int i; i < std::min(this->beamSize, (int)level_schedules.size()); i++)
             {
-                double evel = evaluator.evaluateTransformation(ChildNode);
-                ChildNode->setEvaluation(evel);
+                exploration_queue.push(level_schedules[i]);
             }
-            // Sort the candidates based on their evaluation scores
-            
-            std::sort(candidates.begin(), candidates.end(), [](Node *a, Node *b)
-                      { return a->getEvaluation() < b->getEvaluation(); });
 
-            // Set the children nodes of the current node (for printing the tree)
-            node->setChildrenNodes(candidates);
-            // Save the best node at level 0 (the root node of the resulting tree)
-            if (level == 0)
-                BestNode = node;
-
-            level_schedules.insert(level_schedules.end(), candidates.begin(), candidates.end());
+            level++;
         }
 
-        // Sort the level's schedule nodes from smallest to largest evaluation
-        std::sort(level_schedules.begin(), level_schedules.end(), [](Node *a, Node *b)
-                  { return a->getEvaluation() < b->getEvaluation(); });
+        Node *opBestNode = exploration_queue.front();
 
-        /* // Forcing beam search to take one of the parent nodes in the next level
-        std::sort(parent_nodes.begin(), parent_nodes.end(), [](Node *a, Node *b) {
-            return std::stod(a->getEvaluation()) < std::stod(b->getEvaluation());
-        });
-        parent_nodes.resize(std::min(1, (int)parent_nodes.size()));
-        level_schedules.insert(level_schedules.begin(), parent_nodes.begin(), parent_nodes.end());*/
-
-        // keep the top 'beam_size' children and delete the rest
-        /*for (int i = this->beamSize; i < level_schedules.size(); ++i)
-            delete level_schedules[i];*/
-        level_schedules.resize(std::min(this->beamSize, (int)level_schedules.size()));
-
-        // Add the level's schedule nodes to the exploration queue for the next level
-        for (Node *child : level_schedules)
+        // If the best node in the current op has a better evaluation than the current best node
+        if (opBestNode->getEvaluation() < BestNode->getEvaluation())
         {
-            exploration_queue.push(child);
+            BestNode = opBestNode;
         }
-        level++;
+
+        if (currentOp >= 0)
+            BestNode->setCurrentStage(--currentOp);
     }
+
 
     return BestNode;
 }

@@ -35,17 +35,22 @@ void generateForOpCombinations(const llvm::SmallVector<llvm::SmallVector<int64_t
 
 llvm::SmallVector<llvm::SmallVector<int64_t, 4>, 4>
 generateTileForOpCombinations(int64_t maxNumberLoops,
-                              const llvm::SmallVector<mlir::Range> &iterationDomain)
+                              const llvm::SmallVector<mlir::Range> &iterationDomain,
+                              const SmallVector<utils::IteratorType> &iteratorTypes)
 {
 
   llvm::SmallVector<int64_t> upperBounds;
-  for (const auto &range : llvm::enumerate(iterationDomain))
+  for (auto [index, range, iteratorType] : llvm::enumerate(iterationDomain, iteratorTypes))
   {
+    if (iteratorType == utils::IteratorType::reduction) {
+      upperBounds.push_back(0);
+      continue;
+    }
     llvm::SmallVector<mlir::Value> dynamicVec;
     llvm::SmallVector<int64_t> staticVec;
-    if (auto val = getConstantIntValue(range.value().size))
+    if (auto val = getConstantIntValue(range.size))
     {
-      dispatchIndexOpFoldResult(range.value().size,
+      dispatchIndexOpFoldResult(range.size,
                                 dynamicVec,
                                 staticVec);
       upperBounds.append(staticVec.begin(), staticVec.end());
@@ -58,21 +63,19 @@ generateTileForOpCombinations(int64_t maxNumberLoops,
   llvm::SmallVector<llvm::SmallVector<int64_t, 4>, 4> possibleTileSizes;
   for (int64_t value : upperBounds)
   {
-    llvm::SmallVector<int64_t, 4> dividers;
-    if (value == -1)
+    if (value == 0)
     {
-      dividers.push_back(1);
+      possibleTileSizes.push_back({0});
+      continue;
     }
-    for (int64_t i = 2; i <= value; ++i)
+    llvm::SmallVector<int64_t, 4> dividers;
+    dividers.push_back(1);
+    for (int64_t i = 2; i < std::min((int)value, 11); ++i)
     {
-      if (i < 50 && value % i == 0)
+      if (value % i == 0)
       {
         dividers.push_back(i);
       }
-    }
-    if (dividers.empty())
-    {
-      dividers.push_back(1);
     }
     possibleTileSizes.push_back(dividers);
   }
