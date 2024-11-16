@@ -8,8 +8,8 @@
 #SBATCH -c 28
 #SBATCH --mem=64G
 #SBATCH -t 02-00
-#SBATCH -o /scratch/mt5383/MLAutoScheduler/scripts/lqcd/auto-inner-p2.out
-#SBATCH -e /scratch/mt5383/MLAutoScheduler/scripts/lqcd/auto-inner-p2.err
+#SBATCH -o /scratch/mt5383/MLAutoScheduler/scripts/lqcd/auto-inner-p3.out
+#SBATCH -e /scratch/mt5383/MLAutoScheduler/scripts/lqcd/auto-inner-p3.err
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=mt5383@nyu.edu
 
@@ -28,6 +28,6 @@ export SHARED_LIBS=/scratch/mt5383/llvm-project/build/lib/libmlir_runner_utils.s
 export PYTHON=/home/mt5383/.conda/envs/main/bin/python
 export AS_VERBOSE=1
 
-/scratch/mt5383/MLAutoScheduler/build/bin/AutoSchedulerML /scratch/mt5383/MLAutoScheduler/lqcd-benchmarks/ABconj_inner.mlir
-/scratch/mt5383/MLAutoScheduler/build/bin/AutoSchedulerML /scratch/mt5383/MLAutoScheduler/lqcd-benchmarks/ABCD_ABconj_inner.mlir
-/scratch/mt5383/MLAutoScheduler/build/bin/AutoSchedulerML /scratch/mt5383/MLAutoScheduler/lqcd-benchmarks/ABCD_ABconj_nameless_inner.mlir
+/scratch/mt5383/MLAutoScheduler/build/bin/AutoSchedulerML /scratch/mt5383/MLAutoScheduler/lqcd-benchmarks/ABCD_2let_inner.mlir
+/scratch/mt5383/MLAutoScheduler/build/bin/AutoSchedulerML /scratch/mt5383/MLAutoScheduler/lqcd-benchmarks/ABCD_2let_nameless_inner.mlir
+/scratch/mt5383/MLAutoScheduler/build/bin/AutoSchedulerML /scratch/mt5383/MLAutoScheduler/lqcd-benchmarks/ABCD_complex_inner.mlir

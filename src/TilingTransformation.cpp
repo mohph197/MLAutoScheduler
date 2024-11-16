@@ -169,7 +169,7 @@ SmallVector<Node *, 2> Tiling::createTilingCandidates(Node *node,
   {
 
     // SmallVector<Node* , 2> ChildNodes;
-    SmallVector<SmallVector<int64_t, 4>, 4> tileCombinations;
+    // SmallVector<SmallVector<int64_t, 4>, 4> tileCombinations;
     SmallVector<utils::IteratorType> loops = tileableOp.getLoopIteratorTypes();
 
     OpBuilder builder(context);
@@ -179,20 +179,20 @@ SmallVector<Node *, 2> Tiling::createTilingCandidates(Node *node,
     {*/
     SmallVector<SmallVector<int64_t, 4>, 4> newCombinations =
         generateTileForOpCombinations(/*NumberLoops*/ iterationDomain.size(), iterationDomain, loops);
-    tileCombinations.insert(tileCombinations.end(), newCombinations.begin(), newCombinations.end());
+    // tileCombinations.insert(tileCombinations.end(), newCombinations.begin(), newCombinations.end());
     //}
 
     std::vector<std::vector<unsigned>> values =
         generateCandidates(loops.size(), 5);
     //SelectedTileCombinations.push_back({1, 8, 8, 32, 5, 5, 3});
-    std::sample(
-      tileCombinations.begin(),
-      tileCombinations.end(),
-      std::back_inserter(SelectedTileCombinations),
-      1,
-      std::mt19937{std::random_device{}()}
-    );
-    for (const auto &candidate : SelectedTileCombinations)
+    // std::sample(
+    //   tileCombinations.begin(),
+    //   tileCombinations.end(),
+    //   std::back_inserter(SelectedTileCombinations),
+    //   1,
+    //   std::mt19937{std::random_device{}()}
+    // );
+    for (const auto &candidate : newCombinations)
     {
       for (const auto &interchange : values)
       {
@@ -235,6 +235,8 @@ SmallVector<Node *, 2> Tiling::createTilingCandidates(Node *node,
   }
   //}
   // });
+
+  std::cerr << "Number of tilings: " << ChildNodes.size() << std::endl;
 
   /*for (const auto& candidate : tileCombinations){
 

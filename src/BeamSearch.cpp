@@ -51,8 +51,10 @@ Node *BeamSearch::runSearchMethod(Node *root)
             SmallVector<Node *, 2> level_schedules;
 
             // Iterate through nodes in the exploration queue at the current level
+            int childIndex = 0;
             while (!exploration_queue.empty())
             {
+                std::cerr << "### Child Index = " << childIndex++ << " ###\n";
                 Node *node = exploration_queue.front();
                 exploration_queue.pop();
 
@@ -66,8 +68,6 @@ Node *BeamSearch::runSearchMethod(Node *root)
                 switch (level)
                 {
                 case 0:
-                    // candidates = Parallelization::createParallelizationCandidates(node, this->context, currentOp, linalgOps);
-                    // candidates = Tiling::createTilingCandidates(node, this->context, currentOp, linalgOps);
                     PCandidates = Parallelization::createParallelizationCandidates(node, this->context, currentOp, linalgOps);
                     TCandidates = Tiling::createTilingCandidates(node, this->context, currentOp, linalgOps);
                     candidates.insert(candidates.end(), PCandidates.begin(), PCandidates.end());
@@ -82,6 +82,8 @@ Node *BeamSearch::runSearchMethod(Node *root)
                     break;
                 }
 
+                std::cerr << "Total number of candidates = " << candidates.size() << "\n";
+
                 // Evaluate each transformation candidate and store their evaluation results
                 for (auto ChildNode : candidates)
                 {
@@ -93,7 +95,7 @@ Node *BeamSearch::runSearchMethod(Node *root)
                 // Insert the parent node as a candidate
                 MLIRCodeIR *ToCloneCodeIr = (MLIRCodeIR *)node->getTransformedCodeIr();
                 MLIRCodeIR *ClonedCode = (MLIRCodeIR *)ToCloneCodeIr->cloneIr();
-                Node *ClonedNode = new Node(ClonedCode, node->getCurrentStage());
+                Node *ClonedNode = new Node(ClonedCode, currentOp);
                 std::vector<Transformation *> TransList = node->getTransformationList();
                 ClonedNode->setTransformationList(TransList);
                 ClonedNode->setEvaluation(node->getEvaluation());
@@ -117,6 +119,8 @@ Node *BeamSearch::runSearchMethod(Node *root)
                 return a->getEvaluation() < b->getEvaluation();
             });
 
+            std::cerr << "### Total level candidates = " << level_schedules.size() << " ###\n";
+
             /* // Forcing beam search to take one of the parent nodes in the next level
             std::sort(parent_nodes.begin(), parent_nodes.end(), [](Node *a, Node *b) {
                 return std::stod(a->getEvaluation()) < std::stod(b->getEvaluation());
@@ -125,14 +129,23 @@ Node *BeamSearch::runSearchMethod(Node *root)
             level_schedules.insert(level_schedules.begin(), parent_nodes.begin(), parent_nodes.end());*/
 
             // Add the top 'beam_size' children to the exploration queue for the next level
-            for (int i; i < std::min(this->beamSize, (int)level_schedules.size()); i++)
+            for (int i = 0; i < std::min(this->beamSize, (int)level_schedules.size()); i++)
             {
                 exploration_queue.push(level_schedules[i]);
             }
 
+            std::cerr << "### New Exploration Queue Size = " << exploration_queue.size() << " ###\n";
+
             level++;
         }
 
+        std::cerr << "### END OF OP: " << currentOp << " ###\n";
+
+        if (exploration_queue.empty())
+        {
+            std::cerr << "### Exploration Queue is empty ###\n";
+            return BestNode;
+        }
         Node *opBestNode = exploration_queue.front();
 
         // If the best node in the current op has a better evaluation than the current best node

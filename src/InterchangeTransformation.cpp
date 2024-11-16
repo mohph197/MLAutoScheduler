@@ -107,6 +107,7 @@ SmallVector<Node *, 2> Interchange::createInterchangeCandidates(
     // ChildNodesList.push_back(ChildNodes);
   }
 
+  std::cerr << "### Applying Interchange to children ###" << std::endl;
   for (auto node : ChildNodes)
   {
     // Get the target operation from the child node's transformed code
@@ -125,16 +126,39 @@ SmallVector<Node *, 2> Interchange::createInterchangeCandidates(
         //auto start = std::chrono::high_resolution_clock::now();
         IRRewriter rewriter(context);
         rewriter.setInsertionPoint(clonedLinalgOp);
-        FailureOr<linalg::GenericOp> generalizeResult =
-            linalg::generalizeNamedOp(rewriter, clonedLinalgOp);
 
-        auto genericOp = *generalizeResult;
+        linalg::GenericOp genericOp;
+        if (!isa<linalg::GenericOp>(clonedLinalgOp)) {
+          FailureOr<linalg::GenericOp> generalizeResult =
+              linalg::generalizeNamedOp(rewriter, clonedLinalgOp);
+          if (failed(generalizeResult))
+          {
+            std::cerr << "Failed to generalize the operation before interchange" << std::endl;
+            return SmallVector<Node *, 2>();
+          }
+
+          genericOp = dyn_cast<linalg::GenericOp>(generalizeResult->getOperation());
+        } else {
+          genericOp = cast<linalg::GenericOp>(clonedLinalgOp);
+        }
+
+        unsigned int numLoops = genericOp.getNumLoops();
+        if (interchangeVector.size() != numLoops) {
+          std::cerr << "Interchange vector size does not match the number of loops in the operation" << std::endl;
+          return SmallVector<Node *, 2>();
+        }
 
         // Perform interchange on the cloned operation
         FailureOr<linalg::GenericOp> interOp =
             linalg::interchangeGenericOp(rewriter,
                                         genericOp,
                                         interchangeVector);
+
+        if (failed(interOp))
+        {
+          std::cerr << "Failed to interchange the operation" << std::endl;
+          return SmallVector<Node *, 2>();
+        }
         /*auto end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
         std::cout << "Time taken by Interchange: " << duration.count() << " microseconds" << std::endl;*/

@@ -53,6 +53,7 @@ if __name__ == "__main__":
     if expected.dtype == np.complex128:
         actual = actual.view(np.complex128).squeeze(len(actual.shape) - 1)
     print(delta_arg[0] / 1e9)
-    with open(os.path.join("log", "asserts.txt"), "a") as f:
-        assertion = np.allclose(actual, expected)
-        f.write(f"{function_name}: {np.allclose(actual, expected)}\n")
+    assertion = np.allclose(actual, expected)
+    if not assertion:
+        with open(os.path.join("log", "asserts.txt"), "a") as f:
+            f.write(f"{function_name}: {assertion}\n")
