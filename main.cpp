@@ -592,7 +592,7 @@ int main(int argc, char **argv)
 
   // Convert the output string to JSON and write it to a file
   std::string outputString = outputStringStream.str();
-  std::ofstream outputFile("log/" + functionName + is_exhaustive ? "_exhaustive.json" : "_beam.json");
+  std::ofstream outputFile("log/" + functionName + (is_exhaustive ? "_exhaustive.json" : "_beam.json"));
   if (!outputFile.is_open())
   {
     std::cerr << "Failed to open file: " << std::endl;
