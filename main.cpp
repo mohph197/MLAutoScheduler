@@ -386,15 +386,29 @@ int main(int argc, char **argv)
         llvm::SmallVector<std::pair<mlir::linalg::LinalgOp, LinalgMappingClassification>, 4> parentOps; //= getLinalgOps(OpVectParent);
 
         int stageInParent = 0;
+        int vectSizeLimit = 4096;
+        if(std::getenv("VECT_SIZE_LIMIT") != nullptr)
+        {
+          vectSizeLimit = std::stoi(std::getenv("VECT_SIZE_LIMIT"));
+        }
         // Store the parent's linalg operations
         OpVectParent->walk([&](mlir::linalg::LinalgOp op)
-                          {
-                    if (op->getNumResults() <= 1)
-                    {
-                          LinalgMappingClassification classification =  classifyLinalgOp(op);
-                          parentOps.push_back(std::make_pair(op, classification));
-                    } });
+          {
+            int64_t cumSize = 1;
+            for (int64_t value : op.getStaticLoopRanges())
+            {
+              if(value != ShapedType::kDynamic)
+                cumSize *= value;
+            }
+            if (op->getNumResults() <= 1 && cumSize <= vectSizeLimit)
+            {
+              LinalgMappingClassification classification =  classifyLinalgOp(op);
+              parentOps.push_back(std::make_pair(op, classification));
+            } 
+          }
+        );
 
+        bool vectSucceeded = false;
         // Loop through each parent linalg operation
         while (stageInParent < parentOps.size())
         {
@@ -513,6 +527,7 @@ int main(int argc, char **argv)
                                                                     boolArrayRef, false);
 
             std::cerr << "GREEDILY APPLY AND FOLD " << vectorized.succeeded() << std::endl;
+            vectSucceeded = vectSucceeded || vectorized.succeeded();
 
             RewritePatternSet patterns(&context);
 
@@ -566,14 +581,18 @@ int main(int argc, char **argv)
 
         std::cerr << "END VECT" << std::endl;
 
-        evel = evaluator.evaluateTransformation(VectNode);
-        VectNode->setEvaluation(evel);
-        if (bestEval->getEvaluation() > evel)
+        if(vectSucceeded)
         {
-          std::cerr << "Changing the best Eval node" << std::endl;
-          bestEval = VectNode;
-          stage = bestEval->getCurrentStage();
-          changed = true;
+          std::cerr << "VECT SUCCEEDED" << std::endl;
+          evel = evaluator.evaluateTransformation(VectNode);
+          VectNode->setEvaluation(evel);
+          if (bestEval->getEvaluation() > evel)
+          {
+            std::cerr << "Changing the best Eval node" << std::endl;
+            bestEval = VectNode;
+            stage = bestEval->getCurrentStage();
+            changed = true;
+          } 
         }
 
         std::cerr << "New stage = " << stage << std::endl;
