@@ -197,7 +197,7 @@ void generateForAllOpCombinations(const llvm::SmallVector<llvm::SmallVector<int6
   if (currentLoop >= maxNumberLoops)
   {
     if (!std::all_of(currentCombination.begin(), currentCombination.end(), [](int64_t size)
-                     { return size == 1 || size == 0; }))
+                     { return size == 0; }))
     {
       combinations.push_back(currentCombination);
     }

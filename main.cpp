@@ -506,12 +506,20 @@ int main(int argc, char **argv)
 
           parentOps.clear();
           OpVectParent->walk([&](mlir::linalg::LinalgOp op)
-                            {
-                    if (op->getNumResults() <= 1)
-                    {
-                          LinalgMappingClassification classification =  classifyLinalgOp(op);
-                          parentOps.push_back(std::make_pair(op, classification));
-                    } });
+            {
+              int64_t cumSize = 1;
+              for (int64_t value : op.getStaticLoopRanges())
+              {
+                if(value != ShapedType::kDynamic)
+                  cumSize *= value;
+              }
+              if (op->getNumResults() <= 1 && cumSize <= vectSizeLimit)
+              {
+                LinalgMappingClassification classification =  classifyLinalgOp(op);
+                parentOps.push_back(std::make_pair(op, classification));
+              }  
+            }
+          );
 
           // Get the operation after decomposition
           mlir::Operation *op2 = parentOps[stageInParent].first;
@@ -560,12 +568,20 @@ int main(int argc, char **argv)
               parentOps.clear();
 
               OpVectParent->walk([&](mlir::linalg::LinalgOp op)
-                                {
-                    if (op->getNumResults() <= 1)
-                    {
-                          LinalgMappingClassification classification =  classifyLinalgOp(op);
-                          parentOps.push_back(std::make_pair(op, classification));
-                    } });
+                {
+                  int64_t cumSize = 1;
+                  for (int64_t value : op.getStaticLoopRanges())
+                  {
+                    if(value != ShapedType::kDynamic)
+                      cumSize *= value;
+                  }
+                  if (op->getNumResults() <= 1 && cumSize <= vectSizeLimit)
+                  {
+                    LinalgMappingClassification classification =  classifyLinalgOp(op);
+                    parentOps.push_back(std::make_pair(op, classification));
+                  }  
+                }
+              );
               stageInParent--;
             }
             if (!vectorized.succeeded())

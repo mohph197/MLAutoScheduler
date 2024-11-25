@@ -370,10 +370,6 @@ SmallVector<Node *, 2> Parallelization::createParallelizationCandidates(Node *no
     llvm::SmallVector<int64_t> upperBounds;
     for (auto [index, range, iteratorType] : llvm::enumerate(iterationDomain, iteratorTypes))
     {
-      if (iteratorType == utils::IteratorType::reduction) {
-        upperBounds.push_back(0);
-        continue;
-      }
       llvm::SmallVector<Value> dynamicVec;
       llvm::SmallVector<int64_t> staticVec;
       dispatchIndexOpFoldResult(range.size,
@@ -389,16 +385,15 @@ SmallVector<Node *, 2> Parallelization::createParallelizationCandidates(Node *no
     std::cerr << std::endl;
     SmallVector<SmallVector<int64_t, 4>, 4> possibleTileSizes;
 
+    int maxTileSize = 64;
+    if(std::getenv("MAX_TILE_SIZE") != nullptr)
+      maxTileSize = std::stoi(std::getenv("MAX_TILE_SIZE"));
+
     for (int64_t value : upperBounds)
     {
-      if (value == 0)
-      {
-        possibleTileSizes.push_back({0});
-        continue;
-      }
       llvm::SmallVector<int64_t, 4> dividers;
       dividers.push_back(1);
-      for (int64_t i = 2; i <= std::min((int)value, 64); i *= 2)
+      for (int64_t i = 2; i <= std::min((int)value, maxTileSize); i *= 2)
       {
         if (value % i == 0)
         {
@@ -473,39 +468,79 @@ SmallVector<Node *, 2> Parallelization::createParallelizationCandidates(Node *no
     if (mlir::TilingInterface ClonedTileableOp = dyn_cast<mlir::TilingInterface>(linalgOp))
     {
 
-      IRRewriter rewriter(context);
-      OpBuilder builder(context);
-
-      std::optional<ArrayAttr> mapping;
-      SmallVector<OpFoldResult, 4> opFoldResults;
-      for (int64_t value : parallelization->getTileSizes())
-      {
-        opFoldResults.push_back(builder.getIndexAttr(value));
-      }
-      rewriter.setInsertionPoint(ClonedTileableOp);
-      ArrayRef<OpFoldResult> tileSizes = llvm::ArrayRef(opFoldResults);
-      FailureOr<linalg::ForallTilingResult> tilingResult =
-          linalg::tileToForallOpUsingTileSizes(rewriter, ClonedTileableOp, tileSizes, mapping);
-      if (!failed(tilingResult))
-        rewriter.replaceOp(ClonedTileableOp, tilingResult->tileOp->getResults());
-
+      SmallVector<utils::IteratorType> iteratorTypes = ClonedTileableOp.getLoopIteratorTypes();
+      int nbLoopsTiled = 0;
+      int nbLoops = parallelization->getTileSizes().size();
       Operation *afterOp;
+      mlir::TilingInterface tiledOp = ClonedTileableOp;
       std::string consumerTag = "consumer" + std::to_string(CurrentStage);
-      if (scf::ForallOp parallelizableOp = dyn_cast<scf::ForallOp>(tilingResult->tileOp)) {
-        IRRewriter rewriter1(context);
-        scf::ParallelOp parallelOp;
-        if (failed(scf::forallToParallelLoop(rewriter1, parallelizableOp, &parallelOp)))
-          std::cerr << "COULDN'T PARALLELIZE THE OPERATION" << std::endl;
-        afterOp = parallelOp;
-        TagSCFParallel(afterOp, consumerTag);
-      } else {
-        std::cerr << "COULDN'T FIND FORALL OP TO PARALLELIZE" << std::endl;
-        afterOp = tilingResult->tileOp;
+
+      while(nbLoopsTiled < nbLoops)
+      {
+        IRRewriter rewriter(context);
+        OpBuilder builder(context);
+
+        std::optional<ArrayAttr> mapping;
+        SmallVector<OpFoldResult, 4> opFoldResults;
+        bool tileReductionLoops = iteratorTypes[nbLoopsTiled] == utils::IteratorType::reduction;
+        // Fill tile sizes with zeros for already tiled loops
+        for(int i = 0; i < nbLoopsTiled; i++)
+          opFoldResults.push_back(builder.getIndexAttr(0));
+        // Fill tile sizes
+        for (int i = nbLoopsTiled; i < nbLoops; i++)
+        {
+          if((!tileReductionLoops && iteratorTypes[i] == utils::IteratorType::reduction) || (tileReductionLoops && iteratorTypes[i] != utils::IteratorType::reduction))
+              break;
+          opFoldResults.push_back(builder.getIndexAttr(parallelization->getTileSizes()[i]));
+          nbLoopsTiled++;
+        }
+
+        if(tileReductionLoops)
+        {
+          // ================== Non-parallel tiling ===================
+          rewriter.setInsertionPoint(tiledOp);
+          ArrayRef<OpFoldResult> tileSizes = llvm::ArrayRef(opFoldResults);
+          FailureOr<linalg::ForallTilingResult> tilingResult =
+              linalg::tileToForallOpUsingTileSizes(rewriter, tiledOp, tileSizes, mapping);
+          if (!failed(tilingResult))
+            rewriter.replaceOp(tiledOp, tilingResult->tileOp->getResults());
+
+          tiledOp = dyn_cast<mlir::TilingInterface>(tilingResult->tiledOp);
+          afterOp = tilingResult->tileOp;
+
+          if(nbLoopsTiled == nbLoops)
+            TagSCFForAll(afterOp, consumerTag);
+        }
+        else
+        {
+          // ================== Parallel tiling ====================
+          rewriter.setInsertionPoint(tiledOp);
+          ArrayRef<OpFoldResult> tileSizes = llvm::ArrayRef(opFoldResults);
+          FailureOr<linalg::ForallTilingResult> tilingResult =
+              linalg::tileToForallOpUsingTileSizes(rewriter, tiledOp, tileSizes, mapping);
+          if (!failed(tilingResult))
+            rewriter.replaceOp(tiledOp, tilingResult->tileOp->getResults());
+          tiledOp = dyn_cast<mlir::TilingInterface>(tilingResult->tiledOp);
+
+          if (scf::ForallOp parallelizableOp = dyn_cast<scf::ForallOp>(tilingResult->tileOp)) {
+            IRRewriter rewriter1(context);
+            scf::ParallelOp parallelOp;
+            if (failed(scf::forallToParallelLoop(rewriter1, parallelizableOp, &parallelOp)))
+              std::cerr << "COULDN'T PARALLELIZE THE OPERATION" << std::endl;
+            afterOp = parallelOp;
+            if(nbLoopsTiled == nbLoops)
+              TagSCFParallel(afterOp, consumerTag);
+          } else {
+            std::cerr << "COULDN'T FIND FORALL OP TO PARALLELIZE" << std::endl;
+            afterOp = tilingResult->tileOp;
+            if(nbLoopsTiled == nbLoops)
+              TagSCFForAll(afterOp, consumerTag);
+          }
+        }
       }
 
       int nbFused = 0;
       SmallVector<mlir::Operation *, 2> producers;
-
 
       // ClonedTarget->walk([&](mlir::Operation *op)
       //                    {
